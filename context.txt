@@ -1,0 +1,26 @@
+🚩 Project Overview: French Education & Study Abroad Platform
+1. Mục tiêu hệ thống (System Goals)
+Xây dựng một nền tảng lai giữa CMS (Quản lý nội dung/Quảng cáo) và LMS (Quản lý học tập nội bộ) cho một trung tâm tiếng Pháp nhỏ. Hệ thống cần phục vụ 3 nhóm đối tượng: Khách vãng lai, Học viên/Giáo viên, và Quản trị viên (Chủ trung tâm).
+
+2. Các phân hệ chức năng chính (Core Modules)
+Public Portal (Marketing): Trang Landing page giới thiệu dịch vụ, Blog chia sẻ kiến thức tiếng Pháp và tư vấn du học (Cần chuẩn SEO).
+
+Resource Management (Bảo mật tài liệu): Kho lưu trữ tài liệu nội bộ dành cho giáo viên và học viên. Yêu cầu: Phân quyền truy cập (RBAC), hạn chế rò rỉ tài liệu ra ngoài.
+
+Assignment System (LMS): Giao bài tập từ giáo viên -> Học viên làm và upload bài nộp -> Giáo viên chấm điểm/phản hồi.
+
+Booking System: Tính năng đặt lịch hẹn (slots) để học viên đăng ký các buổi luyện nói (Speaking) với giáo viên.
+
+User Management: Lưu trữ và quản lý thông tin học viên, khách hàng đăng ký tư vấn du học.
+
+3. Yêu cầu kỹ thuật cốt lõi (Technical Requirements)
+Authentication & Authorization: Hệ thống phân quyền chặt chẽ (Admin, Teacher, Student, Guest).
+
+File Handling: Xử lý upload/download file bài tập và tài liệu PDF/Video một cách an toàn.
+
+Database Schema: Cần thiết kế các bảng liên kết giữa Khóa học - Bài tập - Học viên - Lịch trình.
+
+4. Định hướng triển khai (Implementation Vibe)
+Cách tiếp cận: Tự code (Custom Build) để kiểm soát 100% tính năng và dễ dàng mở rộng (tích hợp AI về sau).
+
+Ưu tiên: Tập trung vào việc hiện thực hóa luồng dữ liệu (Data Flow) giữa các thực thể, đảm bảo tính bảo mật của tài liệu và trải nghiệm người dùng mượt mà trên Dashboard.
