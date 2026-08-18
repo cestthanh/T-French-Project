@@ -11,7 +11,13 @@ public record AuthResponseDto(string Token, UserDto User);
 public record UserDto(int Id, string FullName, string Email, string Role, string? AvatarUrl);
 
 // ── Assignment ────────────────────────────────────────────────────────────────
-public record CreateAssignmentDto(string Title, string? Description, DateTime DueDate, int CourseId);
+// AttachmentUrl and AttachmentId are alternatives: a link out, or a file the
+// centre hosts itself. Both optional — an assignment may have no brief at all.
+public record CreateAssignmentDto(
+    string Title, string? Description, DateTime DueDate, int CourseId,
+    string? AttachmentUrl = null, int? AttachmentId = null);
+
+public record SubmitAssignmentDto(int? FileId, string? FileUrl, string? Note);
 
 public record GradeSubmissionDto(int Grade, string? Feedback);
 

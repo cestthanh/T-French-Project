@@ -13,6 +13,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<BookingSlot> BookingSlots => Set<BookingSlot>();
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,6 +26,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Unique blog slug
         modelBuilder.Entity<BlogPost>()
             .HasIndex(b => b.Slug).IsUnique();
+
+        // Files are looked up by their public GUID on every download.
+        modelBuilder.Entity<StoredFile>()
+            .HasIndex(f => f.PublicId).IsUnique();
+
+        modelBuilder.Entity<StoredFile>()
+            .HasOne(f => f.UploadedBy)
+            .WithMany()
+            .HasForeignKey(f => f.UploadedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Detaching a file must never take the row that referenced it with it —
+        // an assignment whose brief was removed is still an assignment.
+        modelBuilder.Entity<Resource>()
+            .HasOne(r => r.File)
+            .WithMany()
+            .HasForeignKey(r => r.FileId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Assignment>()
+            .HasOne(a => a.Attachment)
+            .WithMany()
+            .HasForeignKey(a => a.AttachmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Submission>()
+            .HasOne(s => s.File)
+            .WithMany()
+            .HasForeignKey(s => s.FileId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Prevent cascade delete cycles
         modelBuilder.Entity<Course>()

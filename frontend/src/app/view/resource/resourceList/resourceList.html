@@ -24,10 +24,47 @@
                 placeholder="Video học bảng chữ cái và cách phát âm"></textarea>
     </tf-field>
 
-    <tf-field label="URL tài liệu" [required]="true" for="r-url"
-              hint="Google Drive, YouTube, link PDF...">
-      <input id="r-url" tfInput formControlName="fileUrl" placeholder="https://..." />
-    </tf-field>
+    <!-- Source: upload into the centre's own storage, or point at a link.
+         Uploading is first because it is the option that keeps the material
+         behind the access check. -->
+    <div class="flex flex-col gap-4">
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="setSourceMode('upload')"
+          class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+          [ngClass]="sourceMode === 'upload' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+        >
+          <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
+          Tải file lên
+        </button>
+        <button
+          type="button"
+          (click)="setSourceMode('link')"
+          class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+          [ngClass]="sourceMode === 'link' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+        >
+          <lucide-icon name="link" class="h-4 w-4"></lucide-icon>
+          Dán link ngoài
+        </button>
+      </div>
+
+      <tf-file-upload
+        *ngIf="sourceMode === 'upload'"
+        label="Tệp tài liệu"
+        hint="File được lưu trên máy chủ của trung tâm và chỉ người có quyền mới tải được."
+        (fileChange)="onFileUploaded($event)"
+      ></tf-file-upload>
+
+      <tf-field
+        *ngIf="sourceMode === 'link'"
+        label="URL tài liệu"
+        for="r-url"
+        hint="Google Drive, YouTube, link PDF... Lưu ý: quyền truy cập do bên đó quyết định, không phải hệ thống này."
+      >
+        <input id="r-url" tfInput formControlName="fileUrl" placeholder="https://..." />
+      </tf-field>
+    </div>
 
     <!-- Flat checkbox: a solid block that fills when checked -->
     <label class="flex cursor-pointer items-center gap-3 rounded-md bg-muted p-4 transition-colors duration-200 hover:bg-line">
@@ -38,7 +75,7 @@
 
     <div class="flex flex-wrap justify-end gap-3">
       <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
-      <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">
+      <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || !hasSource || saving">
         {{ saving ? 'Đang lưu...' : 'Thêm tài liệu' }}
       </button>
     </div>
@@ -72,8 +109,8 @@
 <div *ngIf="!loading">
   <div *ngIf="filtered.length" class="grid gap-5 lg:grid-cols-2">
     <div *ngFor="let r of filtered" tfCard tone="white" padding="lg" class="flex gap-5">
-      <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full" [ngClass]="kindOf(r.fileUrl).chip">
-        <lucide-icon [name]="kindOf(r.fileUrl).icon" class="h-7 w-7" [strokeWidth]="2.5"></lucide-icon>
+      <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full" [ngClass]="kindOf(r).chip">
+        <lucide-icon [name]="kindOf(r).icon" class="h-7 w-7" [strokeWidth]="2.5"></lucide-icon>
       </span>
 
       <div class="min-w-0 flex-1">
@@ -106,7 +143,28 @@
           <span class="flex items-center gap-1.5 text-sm text-ink-muted">
             <lucide-icon name="calendar" class="h-4 w-4"></lucide-icon>{{ r.createdAt | date: 'dd/MM/yy' }}
           </span>
-          <a [href]="r.fileUrl" target="_blank" rel="noopener" tfButton variant="primary" size="sm" class="ml-auto">
+          <!-- A stored file needs the bearer token, so it is a button that
+               fetches the blob; an external link is just a link. -->
+          <button
+            *ngIf="r.file"
+            type="button"
+            (click)="download(r)"
+            [disabled]="downloadingId === r.id"
+            tfButton variant="primary" size="sm" class="ml-auto"
+          >
+            <lucide-icon
+              [name]="downloadingId === r.id ? 'loader-circle' : 'file-down'"
+              class="h-4 w-4"
+              [class.animate-spin-flat]="downloadingId === r.id"
+            ></lucide-icon>
+            {{ downloadingId === r.id ? 'Đang tải...' : 'Tải xuống' }}
+          </button>
+
+          <a
+            *ngIf="!r.file && r.fileUrl"
+            [href]="r.fileUrl" target="_blank" rel="noopener"
+            tfButton variant="primary" size="sm" class="ml-auto"
+          >
             <lucide-icon name="external-link" class="h-4 w-4"></lucide-icon>
             Mở
           </a>

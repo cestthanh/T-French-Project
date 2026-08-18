@@ -1,0 +1,71 @@
+<div class="flex flex-col gap-2">
+  <label *ngIf="label" class="eyebrow text-ink-soft">{{ label }}</label>
+
+  <!-- ══ EMPTY: drop zone ═══════════════════════════════════════════════════ -->
+  <label
+    *ngIf="!uploaded && !uploading"
+    class="flex cursor-pointer flex-col items-center gap-3 rounded-md border-2 px-6 py-10 text-center transition-all duration-200"
+    [ngClass]="disabled
+      ? 'cursor-not-allowed border-line bg-muted opacity-50'
+      : dragging
+        ? 'border-primary bg-primary-soft'
+        : 'border-line bg-muted hover:border-primary hover:bg-primary-soft'"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <span class="flex h-14 w-14 items-center justify-center rounded-full bg-primary">
+      <lucide-icon name="upload" class="h-6 w-6 text-white" [strokeWidth]="2.5"></lucide-icon>
+    </span>
+
+    <span class="font-bold tracking-heading text-ink">
+      Kéo thả file vào đây, hoặc bấm để chọn
+    </span>
+    <span class="text-sm text-ink-muted">
+      Tối đa {{ maxMb }} MB · PDF, Word, PowerPoint, Excel, ảnh, ZIP
+    </span>
+
+    <input type="file" class="hidden" [accept]="accept" [disabled]="disabled" (change)="onPicked($event)" />
+  </label>
+
+  <!-- ══ UPLOADING: flat progress bar ══════════════════════════════════════ -->
+  <div *ngIf="uploading" class="rounded-md bg-muted px-6 py-6">
+    <div class="flex items-center gap-3">
+      <lucide-icon name="loader-circle" class="h-5 w-5 shrink-0 animate-spin-flat text-primary"></lucide-icon>
+      <span class="font-semibold text-ink">Đang tải lên... {{ progress }}%</span>
+    </div>
+
+    <!-- Solid fill, no gradient, no rounded pill: the design system's bar. -->
+    <div class="mt-4 h-2 w-full overflow-hidden rounded-md bg-line">
+      <div class="h-full bg-primary transition-all duration-200" [style.width.%]="progress"></div>
+    </div>
+  </div>
+
+  <!-- ══ DONE: file chip ═══════════════════════════════════════════════════ -->
+  <div *ngIf="uploaded && !uploading"
+       class="flex items-center gap-4 rounded-md bg-success-soft px-5 py-4">
+    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-success">
+      <lucide-icon name="check" class="h-6 w-6 text-white" [strokeWidth]="3"></lucide-icon>
+    </span>
+
+    <div class="min-w-0 flex-1">
+      <p class="truncate font-bold tracking-heading text-ink">{{ uploaded.originalName }}</p>
+      <p class="text-sm text-ink-muted">{{ sizeLabel(uploaded.sizeBytes) }}</p>
+    </div>
+
+    <button
+      type="button"
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white text-ink-muted transition-all duration-200 hover:bg-danger hover:text-white"
+      aria-label="Xoá file đã chọn"
+      (click)="clear()"
+    >
+      <lucide-icon name="x" class="h-5 w-5" [strokeWidth]="2.5"></lucide-icon>
+    </button>
+  </div>
+
+  <p *ngIf="error" class="flex items-center gap-1.5 text-sm font-medium text-danger">
+    <lucide-icon name="circle-alert" class="h-4 w-4 shrink-0"></lucide-icon>
+    {{ error }}
+  </p>
+  <p *ngIf="hint && !error" class="text-sm text-ink-muted">{{ hint }}</p>
+</div>

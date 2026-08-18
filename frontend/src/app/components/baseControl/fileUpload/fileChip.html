@@ -1,0 +1,42 @@
+<!-- Uploaded file: fetched with the token, then saved. -->
+<button
+  *ngIf="file"
+  type="button"
+  class="group flex w-full items-center gap-4 rounded-md bg-muted px-5 py-4 text-left transition-all duration-200 hover:bg-primary-soft disabled:opacity-60"
+  [disabled]="downloading"
+  (click)="download()"
+>
+  <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary transition-transform duration-200 group-hover:scale-110">
+    <lucide-icon
+      [name]="downloading ? 'loader-circle' : 'file-down'"
+      class="h-6 w-6 text-white"
+      [class.animate-spin-flat]="downloading"
+      [strokeWidth]="2.5"
+    ></lucide-icon>
+  </span>
+
+  <span class="min-w-0 flex-1">
+    <span class="block truncate font-bold tracking-heading text-ink">{{ file.originalName }}</span>
+    <span class="block text-sm text-ink-muted">
+      {{ downloading ? 'Đang tải...' : sizeLabel }}
+    </span>
+  </span>
+</button>
+
+<!-- External link: no token involved, so a plain anchor is correct here. -->
+<a
+  *ngIf="!file && url"
+  [href]="url"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="group flex w-full items-center gap-4 rounded-md bg-muted px-5 py-4 transition-all duration-200 hover:bg-accent-soft"
+>
+  <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent transition-transform duration-200 group-hover:scale-110">
+    <lucide-icon name="external-link" class="h-6 w-6 text-primary" [strokeWidth]="2.5"></lucide-icon>
+  </span>
+
+  <span class="min-w-0 flex-1">
+    <span class="block font-bold tracking-heading text-ink">{{ urlLabel }}</span>
+    <span class="block truncate text-sm text-ink-muted">{{ url }}</span>
+  </span>
+</a>

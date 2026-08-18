@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TFrench.API.Data;
@@ -54,6 +55,21 @@ builder.Services.AddCors(options =>
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         }
     });
+});
+
+// ─── File storage ────────────────────────────────────────────────────────────
+// Only RootPath and MaxSizeBytes are configurable. The extension whitelist
+// stays in FileStorageOptions: it is a security boundary, and IConfiguration
+// binding merges into a dictionary rather than replacing it, so a typo in
+// appsettings would silently widen the list instead of narrowing it.
+builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
+builder.Services.AddScoped<FileStorageService>();
+
+// Kestrel's default multipart cap is 128 MB; bring it down near our own limit
+// so an oversized upload is rejected before it is buffered to disk.
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 30 * 1024 * 1024;
 });
 
 // ─── Services ────────────────────────────────────────────────────────────────

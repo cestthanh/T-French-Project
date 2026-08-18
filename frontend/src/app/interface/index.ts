@@ -1,4 +1,5 @@
 export * from './user';
+export * from './file';
 export * from './course';
 export * from './assignment';
 export * from './resource';

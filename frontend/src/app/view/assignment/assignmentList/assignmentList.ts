@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AssignmentService } from 'src/app/services/assignmentService';
-import { Assignment, Submission } from 'src/app/interface';
+import { Assignment, Submission, UploadedFile } from 'src/app/interface';
 import { AuthService } from 'src/app/services/authService';
+
 import { ToastService } from 'src/app/services/share/toastService';
 
 @Component({
@@ -16,6 +17,9 @@ export class AssignmentList implements OnInit {
   saving = false;
   showCreate = false;
   createForm: FormGroup;
+
+  /** Optional brief for the assignment being created. */
+  attachment: UploadedFile | null = null;
 
   get canManage(): boolean {
     return this.auth.isTeacher || this.auth.isAdmin;
@@ -55,17 +59,23 @@ export class AssignmentList implements OnInit {
     });
   }
 
+  onAttachmentUploaded(file: UploadedFile | null): void {
+    this.attachment = file;
+  }
+
   onCreate(): void {
     if (this.createForm.invalid) return;
     this.saving = true;
     const dto = {
       ...this.createForm.value,
       dueDate: new Date(this.createForm.value.dueDate).toISOString(),
+      attachmentId: this.attachment?.id,
     };
     this.assignmentService.create(dto).subscribe({
       next: () => {
         this.saving = false;
         this.showCreate = false;
+        this.attachment = null;
         this.createForm.reset();
         this.load();
         this.toast.success('Đã tạo bài tập!');

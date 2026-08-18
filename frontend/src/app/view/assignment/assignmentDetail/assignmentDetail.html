@@ -28,6 +28,15 @@
        [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/80'">
       {{ assignment.description }}
     </p>
+
+    <!-- Đề bài đính kèm -->
+    <div *ngIf="assignment.attachment || assignment.attachmentUrl" class="mt-6 max-w-xl">
+      <tf-file-chip
+        [file]="assignment.attachment"
+        [url]="assignment.attachmentUrl"
+        urlLabel="Mở đề bài"
+      ></tf-file-chip>
+    </div>
   </div>
 
   <!-- ══ STUDENT: submit ═════════════════════════════════════════════════ -->
@@ -36,13 +45,46 @@
       <h2 class="text-xl font-extrabold tracking-heading">Nộp bài</h2>
 
       <form [formGroup]="submitForm" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
-        <tf-field label="Ghi chú / Link tài liệu" for="sub-note"
-                  hint="Dán link Google Drive, OneDrive... vì hệ thống chưa hỗ trợ upload file trực tiếp.">
-          <textarea id="sub-note" tfInput formControlName="note" rows="3"
-                    placeholder="https://drive.google.com/..."></textarea>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="setSubmitMode('upload')"
+            class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            [ngClass]="submitMode === 'upload' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+          >
+            <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
+            Tải file lên
+          </button>
+          <button
+            type="button"
+            (click)="setSubmitMode('link')"
+            class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            [ngClass]="submitMode === 'link' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+          >
+            <lucide-icon name="link" class="h-4 w-4"></lucide-icon>
+            Dán link
+          </button>
+        </div>
+
+        <tf-file-upload
+          *ngIf="submitMode === 'upload'"
+          label="Bài làm"
+          hint="Chỉ giáo viên phụ trách khoá học và bạn xem được file này."
+          (fileChange)="onFileUploaded($event)"
+        ></tf-file-upload>
+
+        <tf-field *ngIf="submitMode === 'link'" label="Link bài làm" for="sub-url"
+                  hint="Google Drive, OneDrive... Nhớ mở quyền xem cho giáo viên.">
+          <input id="sub-url" tfInput formControlName="fileUrl" placeholder="https://drive.google.com/..." />
         </tf-field>
 
-        <button type="submit" tfButton variant="primary" size="lg" [disabled]="saving" class="self-start">
+        <tf-field label="Ghi chú cho giáo viên" for="sub-note">
+          <textarea id="sub-note" tfInput formControlName="note" rows="3"
+                    placeholder="Em chưa chắc phần chia động từ ở câu 3..."></textarea>
+        </tf-field>
+
+        <button type="submit" tfButton variant="primary" size="lg"
+                [disabled]="saving || !canSubmit" class="self-start">
           <lucide-icon name="send" class="h-5 w-5"></lucide-icon>
           {{ saving ? 'Đang nộp...' : 'Nộp bài' }}
         </button>
@@ -63,6 +105,14 @@
         <span tfBadge [tone]="mySubmission.grade != null ? 'success' : 'muted'" [square]="true">
           {{ mySubmission.grade != null ? mySubmission.grade + '/10' : 'Chờ chấm' }}
         </span>
+      </div>
+
+      <div *ngIf="mySubmission.file || mySubmission.fileUrl" class="mt-6">
+        <tf-file-chip
+          [file]="mySubmission.file"
+          [url]="mySubmission.fileUrl"
+          urlLabel="Mở bài đã nộp"
+        ></tf-file-chip>
       </div>
 
       <div *ngIf="mySubmission.feedback" class="mt-6 flex items-start gap-3 rounded-md bg-white p-5">
@@ -106,8 +156,12 @@
           </span>
         </div>
 
+        <div *ngIf="s.file || s.fileUrl" class="mt-5">
+          <tf-file-chip [file]="s.file" [url]="s.fileUrl" urlLabel="Mở bài nộp"></tf-file-chip>
+        </div>
+
         <div *ngIf="s.note" class="mt-5 flex items-start gap-3 rounded-md bg-muted p-4">
-          <lucide-icon name="link" class="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
+          <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
           <p class="break-all text-ink-soft">{{ s.note }}</p>
         </div>
 

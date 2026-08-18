@@ -1,9 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { UploadedFile } from 'src/app/interface';
 import { AssignmentService } from 'src/app/services/assignmentService';
 import { AuthService } from 'src/app/services/authService';
+
 import { ToastService } from 'src/app/services/share/toastService';
+
+/** How the student hands the work in. */
+type SubmitMode = 'upload' | 'link';
 
 @Component({
   selector: 'app-assignment-detail',
@@ -19,8 +24,17 @@ export class AssignmentDetail implements OnInit {
   feedbackValue = '';
   submitForm: FormGroup;
 
+  submitMode: SubmitMode = 'upload';
+  uploadedFile: UploadedFile | null = null;
+
   get canGrade(): boolean {
     return this.auth.isTeacher || this.auth.isAdmin;
+  }
+
+  /** A submission needs something in it: a file, a link, or at least a note. */
+  get canSubmit(): boolean {
+    if (this.submitMode === 'upload') return this.uploadedFile != null;
+    return !!this.submitForm.value.fileUrl?.trim() || !!this.submitForm.value.note?.trim();
   }
 
   constructor(
@@ -30,7 +44,7 @@ export class AssignmentDetail implements OnInit {
     private fb: FormBuilder,
     private toast: ToastService,
   ) {
-    this.submitForm = this.fb.group({ note: [''] });
+    this.submitForm = this.fb.group({ note: [''], fileUrl: [''] });
   }
 
   ngOnInit(): void {
@@ -51,10 +65,24 @@ export class AssignmentDetail implements OnInit {
     });
   }
 
+  setSubmitMode(mode: SubmitMode): void {
+    this.submitMode = mode;
+    if (mode === 'upload') this.submitForm.patchValue({ fileUrl: '' });
+    else this.uploadedFile = null;
+  }
+
+  onFileUploaded(file: UploadedFile | null): void {
+    this.uploadedFile = file;
+  }
+
   onSubmit(): void {
-    if (this.saving) return;
+    if (this.saving || !this.canSubmit) return;
     this.saving = true;
-    this.assignmentService.submit(this.assignment.id, this.submitForm.value.note).subscribe({
+    this.assignmentService.submit(this.assignment.id, {
+      fileId: this.submitMode === 'upload' ? this.uploadedFile?.id : undefined,
+      fileUrl: this.submitMode === 'link' ? this.submitForm.value.fileUrl : undefined,
+      note: this.submitForm.value.note,
+    }).subscribe({
       next: s => {
         this.mySubmission = s;
         this.saving = false;

@@ -11,8 +11,19 @@ public class Resource
     public string Title { get; set; } = string.Empty;
 
     public string? Description { get; set; }
-    public string FileUrl { get; set; } = string.Empty;
+
+    /// <summary>External link (Google Drive, YouTube…). Kept alongside
+    /// <see cref="FileId"/> for material that is too large to host or already
+    /// lives elsewhere. Exactly one of the two is set.</summary>
+    public string? FileUrl { get; set; }
+
     public string? FileType { get; set; }
+
+    /// <summary>Uploaded copy held in the centre's own storage. Access is
+    /// checked on download, so this is the option that keeps material private.</summary>
+    public int? FileId { get; set; }
+    public StoredFile? File { get; set; }
+
     public string? Category { get; set; }
     public bool IsPublic { get; set; } = false;
 

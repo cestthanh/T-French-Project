@@ -31,6 +31,12 @@
       </tf-field>
     </div>
 
+    <tf-file-upload
+      label="Đề bài đính kèm (tuỳ chọn)"
+      hint="Chỉ học viên đã ghi danh khoá học này tải được."
+      (fileChange)="onAttachmentUploaded($event)"
+    ></tf-file-upload>
+
     <div class="flex flex-wrap justify-end gap-3">
       <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
       <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">

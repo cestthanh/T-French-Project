@@ -19,6 +19,8 @@ import { BaseTab } from './tabs/tab';
 import { BaseTabs } from './tabs/tabs';
 import { BaseToast } from './toast/toast';
 import { BaseSection } from './section/section';
+import { BaseFileUpload } from './fileUpload/fileUpload';
+import { BaseFileChip } from './fileUpload/fileChip';
 import { BaseSectionHeading } from './section/sectionHeading';
 
 const BASE_CONTROLS = [
@@ -37,6 +39,8 @@ const BASE_CONTROLS = [
   BaseToast,
   BaseSection,
   BaseSectionHeading,
+  BaseFileUpload,
+  BaseFileChip,
 ];
 
 /**

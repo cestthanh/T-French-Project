@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Assignment, CreateAssignmentRequest, Submission } from 'src/app/interface';
+import { Assignment, CreateAssignmentRequest, Submission, SubmitAssignmentRequest } from 'src/app/interface';
 import { uriAssignment } from './Uri/RequestUri/uriAssignment';
 
 @Injectable({ providedIn: 'root' })
@@ -30,10 +30,13 @@ export class AssignmentService {
     return this.http.delete<void>(uriAssignment.DELETE(id));
   }
 
-  submit(id: number, note?: string): Observable<any> {
-    const form = new FormData();
-    if (note) form.append('note', note);
-    return this.http.post<any>(uriAssignment.SUBMIT(id), form);
+  /**
+   * Hands in work. The file itself is uploaded separately by `FileService`, so
+   * this body only carries the id it came back with — which keeps the endpoint
+   * a plain JSON one and lets the upload show its own progress.
+   */
+  submit(id: number, data: SubmitAssignmentRequest): Observable<any> {
+    return this.http.post<any>(uriAssignment.SUBMIT(id), data);
   }
 
   grade(assignmentId: number, submissionId: number, grade: number, feedback?: string): Observable<any> {

@@ -1,8 +1,13 @@
+import { StoredFileInfo } from './file';
+
 export interface Resource {
   id: number;
   title: string;
   description?: string;
-  fileUrl: string;
+  /** External link. Set only when the material was not uploaded. */
+  fileUrl?: string;
+  /** Uploaded copy. Set only when there is no external link. */
+  file?: StoredFileInfo;
   fileType?: string;
   category?: string;
   isPublic: boolean;
@@ -14,7 +19,9 @@ export interface Resource {
 export interface CreateResourceRequest {
   title: string;
   description?: string;
-  fileUrl: string;
+  /** Supply exactly one of these two. */
+  fileUrl?: string;
+  fileId?: number;
   fileType?: string;
   category?: string;
   isPublic: boolean;
