@@ -37,10 +37,23 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
-        policy.WithOrigins(builder.Configuration["Cors:AllowedOrigins"]!)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials());
+    {
+        policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+
+        if (builder.Environment.IsDevelopment())
+        {
+            // `ng serve` picks a random port whenever 4200 is already taken, and a
+            // hard-coded origin then silently fails the preflight. In development,
+            // trust any loopback origin instead.
+            policy.SetIsOriginAllowed(origin =>
+                Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.IsLoopback);
+        }
+        else
+        {
+            policy.WithOrigins(builder.Configuration["Cors:AllowedOrigins"]!
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+    });
 });
 
 // ─── Services ────────────────────────────────────────────────────────────────
