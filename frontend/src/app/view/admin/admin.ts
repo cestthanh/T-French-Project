@@ -1,11 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService } from 'src/app/services/adminService';
-import { AdminStats, AdminUser, AdminBlogPost } from 'src/app/interface';
+import { AdminStats, AdminUser, AdminBlogPost, ContactLead, LeadStats, LeadStatus } from 'src/app/interface';
+import { LeadService } from 'src/app/services/leadService';
 import { ToastService } from 'src/app/services/share/toastService';
 import { StatTone } from 'src/app/components/baseControl/stat/stat';
 
 interface AdminStatCard { icon: string; value: number; label: string; tone: StatTone; }
+
+/** Status filter chips, and the badge tone each status is drawn with. */
+const LEAD_STATUSES: { value: LeadStatus | ''; label: string; tone: string }[] = [
+  { value: '', label: 'Tất cả', tone: 'muted' },
+  { value: 'New', label: 'Mới', tone: 'danger' },
+  { value: 'Contacted', label: 'Đã liên hệ', tone: 'accent' },
+  { value: 'Enrolled', label: 'Đã ghi danh', tone: 'success' },
+  { value: 'Closed', label: 'Đã đóng', tone: 'muted' },
+];
 
 @Component({
   selector: 'app-admin-page',
@@ -21,6 +31,17 @@ export class Admin implements OnInit {
   blogForm: FormGroup;
   statCards: AdminStatCard[] = [];
 
+  leads: ContactLead[] = [];
+  leadStats: LeadStats | null = null;
+  leadStatus: LeadStatus | '' = '';
+  leadSearch = '';
+  /** Which enquiry has its follow-up note open. Only one at a time — the notes
+   * are long enough that several open at once is unreadable. */
+  editingNoteId: number | null = null;
+  noteDraft = '';
+
+  readonly leadStatuses = LEAD_STATUSES;
+
   readonly roleFilters = [
     { value: '', label: 'Tất cả' },
     { value: 'Student', label: 'Học viên' },
@@ -30,6 +51,7 @@ export class Admin implements OnInit {
 
   constructor(
     private adminService: AdminService,
+    private leadService: LeadService,
     private fb: FormBuilder,
     private toast: ToastService,
   ) {
@@ -48,6 +70,8 @@ export class Admin implements OnInit {
     this.loadStats();
     this.loadUsers();
     this.loadBlog();
+    this.loadLeads();
+    this.loadLeadStats();
   }
 
   loadStats(): void {
@@ -150,5 +174,69 @@ export class Admin implements OnInit {
 
   getTags(tags?: string): string[] {
     return tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+  }
+
+  // ── Enquiries ──────────────────────────────────────────────────────────────
+
+  loadLeads(): void {
+    this.leadService
+      .getAll(this.leadStatus || undefined, this.leadSearch || undefined)
+      .subscribe({ next: d => (this.leads = d), error: () => {} });
+  }
+
+  loadLeadStats(): void {
+    this.leadService.getStats().subscribe({ next: s => (this.leadStats = s), error: () => {} });
+  }
+
+  filterLeadStatus(status: LeadStatus | ''): void {
+    this.leadStatus = status;
+    this.loadLeads();
+  }
+
+  onChangeLeadStatus(lead: ContactLead, status: LeadStatus): void {
+    this.leadService.update(lead.id, { status }).subscribe({
+      next: () => {
+        lead.status = status;
+        // The counts drive the tab label, so they have to move with the change.
+        this.loadLeadStats();
+        // A lead that no longer matches the active filter should leave the list
+        // rather than sit there contradicting the filter above it.
+        if (this.leadStatus && this.leadStatus !== status) this.loadLeads();
+        this.toast.success('Đã cập nhật trạng thái.');
+      },
+      error: () => this.toast.error('Lỗi khi cập nhật trạng thái.'),
+    });
+  }
+
+  startNote(lead: ContactLead): void {
+    this.editingNoteId = lead.id;
+    this.noteDraft = lead.note ?? '';
+  }
+
+  saveNote(lead: ContactLead): void {
+    this.leadService.update(lead.id, { note: this.noteDraft }).subscribe({
+      next: () => {
+        lead.note = this.noteDraft;
+        this.editingNoteId = null;
+        this.toast.success('Đã lưu ghi chú.');
+      },
+      error: () => this.toast.error('Lỗi khi lưu ghi chú.'),
+    });
+  }
+
+  onDeleteLead(lead: ContactLead): void {
+    if (!confirm(`Xoá yêu cầu tư vấn của "${lead.fullName}"?`)) return;
+    this.leadService.delete(lead.id).subscribe({
+      next: () => { this.loadLeads(); this.loadLeadStats(); this.toast.success('Đã xoá yêu cầu.'); },
+      error: () => this.toast.error('Lỗi khi xoá yêu cầu.'),
+    });
+  }
+
+  leadTone(status: LeadStatus): string {
+    return LEAD_STATUSES.find(s => s.value === status)?.tone ?? 'muted';
+  }
+
+  leadLabel(status: LeadStatus): string {
+    return LEAD_STATUSES.find(s => s.value === status)?.label ?? status;
   }
 }

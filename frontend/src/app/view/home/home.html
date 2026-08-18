@@ -309,15 +309,23 @@
         <input id="contact-email" tfInput type="email" formControlName="email" placeholder="you@example.com" />
       </tf-field>
 
+      <tf-field label="Số điện thoại" for="contact-phone" hint="Không bắt buộc — nhưng gọi lại thì nhanh hơn email.">
+        <input id="contact-phone" tfInput type="tel" formControlName="phoneNumber" placeholder="0912 345 678" />
+      </tf-field>
+
       <tf-field label="Nội dung cần tư vấn" [required]="true" for="contact-message">
         <textarea id="contact-message" tfInput formControlName="message" rows="4"
                   placeholder="Mình muốn tìm hiểu lộ trình DELF B2..."></textarea>
       </tf-field>
 
       <button type="submit" tfButton variant="primary" size="lg" [block]="true"
-              [disabled]="contactForm.invalid || contactSent">
-        <lucide-icon [name]="contactSent ? 'circle-check' : 'send'" class="h-5 w-5"></lucide-icon>
-        {{ contactSent ? 'Đã gửi yêu cầu!' : 'Gửi yêu cầu tư vấn' }}
+              [disabled]="contactForm.invalid || contactSending || contactSent">
+        <lucide-icon
+          [name]="contactSent ? 'circle-check' : contactSending ? 'loader-circle' : 'send'"
+          class="h-5 w-5"
+          [class.animate-spin-flat]="contactSending"
+        ></lucide-icon>
+        {{ contactSent ? 'Đã gửi yêu cầu!' : contactSending ? 'Đang gửi...' : 'Gửi yêu cầu tư vấn' }}
       </button>
 
       <p class="text-center text-sm text-ink-muted">

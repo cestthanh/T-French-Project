@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BookingSlot> BookingSlots => Set<BookingSlot>();
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<ContactLead> ContactLeads => Set<ContactLead>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +56,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(s => s.File)
             .WithMany()
             .HasForeignKey(s => s.FileId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // The enquiry list is always read newest-first, usually narrowed to one
+        // status, so index the pair rather than either column alone.
+        modelBuilder.Entity<ContactLead>()
+            .HasIndex(l => new { l.Status, l.CreatedAt });
+
+        // Removing an admin account must not take the enquiries they handled.
+        modelBuilder.Entity<ContactLead>()
+            .HasOne(l => l.HandledBy)
+            .WithMany()
+            .HasForeignKey(l => l.HandledById)
             .OnDelete(DeleteBehavior.SetNull);
 
         // Prevent cascade delete cycles

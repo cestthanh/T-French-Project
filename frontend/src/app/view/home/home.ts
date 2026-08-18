@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/services/authService';
 import { BlogService } from 'src/app/services/blogService';
+import { LeadService } from 'src/app/services/leadService';
+import { ToastService } from 'src/app/services/share/toastService';
 import { BlogPost } from 'src/app/interface';
 
 interface Feature { icon: string; title: string; desc: string; }
@@ -19,6 +21,7 @@ interface Faq { q: string; a: string; }
 export class Home implements OnInit {
   latestPosts: BlogPost[] = [];
   contactSent = false;
+  contactSending = false;
   contactForm: FormGroup;
   openFaq: number | null = 0;
 
@@ -78,10 +81,13 @@ export class Home implements OnInit {
     private fb: FormBuilder,
     public auth: AuthService,
     private blogService: BlogService,
+    private leadService: LeadService,
+    private toast: ToastService,
   ) {
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
+      phoneNumber: [''],
       message: ['', Validators.required],
     });
   }
@@ -98,9 +104,25 @@ export class Home implements OnInit {
   }
 
   submitContact(): void {
-    if (this.contactForm.invalid) return;
-    // TODO: wire to backend contact endpoint (no lead-capture API exists yet)
-    this.contactSent = true;
-    this.contactForm.reset();
+    if (this.contactForm.invalid || this.contactSending) return;
+
+    this.contactSending = true;
+    const { name, email, phoneNumber, message } = this.contactForm.value;
+
+    this.leadService
+      .create({ fullName: name, email, phoneNumber, message, interest: 'Tư vấn từ trang chủ' })
+      .subscribe({
+        next: () => {
+          this.contactSending = false;
+          this.contactSent = true;
+          this.contactForm.reset();
+        },
+        error: err => {
+          // The form is not cleared on failure: retyping a paragraph of
+          // questions because the network blipped is the worst outcome here.
+          this.contactSending = false;
+          this.toast.error(err?.error?.message || 'Không gửi được yêu cầu. Vui lòng thử lại.');
+        },
+      });
   }
 }

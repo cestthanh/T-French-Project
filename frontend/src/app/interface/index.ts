@@ -6,3 +6,4 @@ export * from './resource';
 export * from './booking';
 export * from './blog';
 export * from './admin';
+export * from './lead';

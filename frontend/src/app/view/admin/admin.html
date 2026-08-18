@@ -89,6 +89,115 @@
                       description="Thử đổi từ khoá hoặc bộ lọc role."></tf-empty-state>
     </tf-tab>
 
+    <!-- ── ENQUIRIES ────────────────────────────────────────────────────── -->
+    <tf-tab
+      [label]="leadStats?.new ? 'Tư vấn (' + leadStats!.new + ' mới)' : 'Tư vấn'"
+      icon="mail"
+    >
+      <div class="mb-6 flex flex-wrap items-center gap-4">
+        <div class="relative flex-1 basis-64">
+          <lucide-icon name="search"
+                       class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"></lucide-icon>
+          <input tfInput [(ngModel)]="leadSearch" (ngModelChange)="loadLeads()"
+                 placeholder="Tìm theo tên / email / SĐT" aria-label="Tìm yêu cầu tư vấn"
+                 class="!bg-white !pl-12" />
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            *ngFor="let filter of leadStatuses"
+            type="button"
+            (click)="filterLeadStatus(filter.value)"
+            class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            [ngClass]="leadStatus === filter.value ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+          >
+            {{ filter.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div *ngFor="let lead of leads" tfCard tone="white" padding="lg">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span tfBadge [tone]="$any(leadTone(lead.status))" [square]="true">
+                  {{ leadLabel(lead.status) }}
+                </span>
+                <span *ngIf="lead.interest" tfBadge tone="primary-soft" [square]="true">{{ lead.interest }}</span>
+              </div>
+
+              <h3 class="mt-3 text-lg font-bold tracking-heading">{{ lead.fullName }}</h3>
+
+              <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-muted">
+                <a [href]="'mailto:' + lead.email" class="flex items-center gap-1.5 hover:text-primary">
+                  <lucide-icon name="mail" class="h-4 w-4"></lucide-icon>{{ lead.email }}
+                </a>
+                <a *ngIf="lead.phoneNumber" [href]="'tel:' + lead.phoneNumber"
+                   class="flex items-center gap-1.5 hover:text-primary">
+                  <lucide-icon name="phone" class="h-4 w-4"></lucide-icon>{{ lead.phoneNumber }}
+                </a>
+                <span class="flex items-center gap-1.5">
+                  <lucide-icon name="calendar" class="h-4 w-4"></lucide-icon>
+                  {{ lead.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-2">
+              <select tfInput [ngModel]="lead.status" (ngModelChange)="onChangeLeadStatus(lead, $event)"
+                      class="!w-auto !py-2 !pl-3 !pr-8 text-sm font-semibold"
+                      [attr.aria-label]="'Trạng thái của ' + lead.fullName">
+                <option value="New">Mới</option>
+                <option value="Contacted">Đã liên hệ</option>
+                <option value="Enrolled">Đã ghi danh</option>
+                <option value="Closed">Đã đóng</option>
+              </select>
+              <button type="button" (click)="onDeleteLead(lead)" tfButton variant="ghost" size="icon"
+                      class="!text-danger hover:!bg-danger-soft" [attr.aria-label]="'Xoá yêu cầu của ' + lead.fullName">
+                <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+              </button>
+            </div>
+          </div>
+
+          <p class="mt-5 whitespace-pre-line rounded-md bg-muted p-5 text-ink-soft">{{ lead.message }}</p>
+
+          <!-- Follow-up note: internal, never shown to the enquirer. -->
+          <div class="mt-5 border-t-2 border-muted pt-5">
+            <div *ngIf="editingNoteId !== lead.id" class="flex flex-wrap items-center justify-between gap-3">
+              <p class="flex items-start gap-2 text-sm" [ngClass]="lead.note ? 'text-ink-soft' : 'text-ink-muted'">
+                <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0"></lucide-icon>
+                {{ lead.note || 'Chưa có ghi chú nội bộ.' }}
+              </p>
+              <button type="button" tfButton variant="outline" size="sm" (click)="startNote(lead)">
+                <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+                {{ lead.note ? 'Sửa ghi chú' : 'Thêm ghi chú' }}
+              </button>
+            </div>
+
+            <div *ngIf="editingNoteId === lead.id" class="flex flex-col gap-3">
+              <textarea tfInput rows="3" [(ngModel)]="noteDraft"
+                        placeholder="Đã gọi 19/08, hẹn tư vấn lại thứ 5..."
+                        [attr.aria-label]="'Ghi chú cho ' + lead.fullName"></textarea>
+              <div class="flex gap-3">
+                <button type="button" tfButton variant="primary" size="sm" (click)="saveNote(lead)">Lưu</button>
+                <button type="button" tfButton variant="secondary" size="sm" (click)="editingNoteId = null">Huỷ</button>
+              </div>
+            </div>
+          </div>
+
+          <p *ngIf="lead.handledBy" class="mt-4 text-xs text-ink-muted">
+            Cập nhật lần cuối bởi {{ lead.handledBy }} · {{ lead.handledAt | date: 'dd/MM/yyyy HH:mm' }}
+          </p>
+        </div>
+      </div>
+
+      <tf-empty-state *ngIf="!leads.length" icon="inbox" title="Chưa có yêu cầu tư vấn nào"
+                      [description]="leadStatus || leadSearch
+                        ? 'Không có yêu cầu nào khớp bộ lọc hiện tại.'
+                        : 'Yêu cầu gửi từ form liên hệ ở trang chủ sẽ xuất hiện tại đây.'"></tf-empty-state>
+    </tf-tab>
+
     <!-- ── BLOG ─────────────────────────────────────────────────────────── -->
     <tf-tab label="Blog" icon="newspaper">
       <div class="grid gap-6 xl:grid-cols-[1fr_22rem]">

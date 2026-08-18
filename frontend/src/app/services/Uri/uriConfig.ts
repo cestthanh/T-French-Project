@@ -17,4 +17,5 @@ export const uriConfig = {
   PROFILE: apiUrl + '/profile',
   DASHBOARD: apiUrl + '/dashboard',
   FILE: apiUrl + '/files',
+  LEAD: apiUrl + '/leads',
 };
