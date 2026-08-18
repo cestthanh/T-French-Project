@@ -1,0 +1,55 @@
+<footer class="relative overflow-hidden bg-ink py-16 text-white">
+  <span class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/5"></span>
+
+  <div class="container-tf relative">
+    <div class="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
+      <!-- Brand -->
+      <div>
+        <!-- Room for the full lockup here, in the knockout artwork -->
+        <a routerLink="/home" class="inline-block no-underline">
+          <tf-logo variant="full" tone="white" sizeClass="h-28"></tf-logo>
+        </a>
+        <p class="mt-4 max-w-sm leading-relaxed text-white/60">
+          Trung tâm tiếng Pháp &amp; tư vấn du học. Học cùng giáo viên bản ngữ,
+          luyện thi DELF/DALF và chuẩn bị hồ sơ du học Pháp.
+        </p>
+      </div>
+
+      <!-- Nav -->
+      <div>
+        <p class="eyebrow text-accent">Khám phá</p>
+        <ul class="mt-5 space-y-3">
+          <li *ngFor="let link of navLinks">
+            <a [routerLink]="link.path"
+               class="text-white/70 no-underline transition-colors duration-200 hover:text-white">
+              {{ link.label }}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Contact -->
+      <div>
+        <p class="eyebrow text-accent">Liên hệ</p>
+        <ul class="mt-5 space-y-3 text-white/70">
+          <li class="flex items-start gap-3">
+            <lucide-icon name="map-pin" class="mt-0.5 h-5 w-5 shrink-0 text-secondary"></lucide-icon>
+            Hà Nội, Việt Nam
+          </li>
+          <li class="flex items-start gap-3">
+            <lucide-icon name="mail" class="mt-0.5 h-5 w-5 shrink-0 text-secondary"></lucide-icon>
+            contact&#64;tfrench.vn
+          </li>
+          <li class="flex items-start gap-3">
+            <lucide-icon name="phone" class="mt-0.5 h-5 w-5 shrink-0 text-secondary"></lucide-icon>
+            0912 345 678
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-14 border-t-2 border-white/10 pt-8 text-sm text-white/50">
+      © {{ year }} T-French. Tous droits réservés.
+    </div>
+  </div>
+</footer>

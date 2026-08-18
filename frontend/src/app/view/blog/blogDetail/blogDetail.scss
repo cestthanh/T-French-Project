@@ -1,0 +1,12 @@
+:host ::ng-deep .post-body {
+  h2 { @apply mt-12 text-3xl font-extrabold tracking-heading text-ink; }
+  h3 { @apply mt-10 text-2xl font-bold tracking-heading text-ink; }
+  p  { @apply mt-5; }
+  ul, ol { @apply mt-5 space-y-2 pl-6; }
+  ul { @apply list-disc; }
+  ol { @apply list-decimal; }
+  a  { @apply font-semibold text-primary underline; }
+  img { @apply mt-8 w-full rounded-lg; }
+  blockquote { @apply mt-8 rounded-lg border-l-4 border-primary bg-muted p-6 font-medium; }
+  code { @apply rounded bg-muted px-1.5 py-0.5 text-base; }
+}

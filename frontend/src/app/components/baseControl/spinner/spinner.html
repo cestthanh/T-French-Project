@@ -1,0 +1,11 @@
+<div class="flex items-center justify-center gap-3 py-8" role="status" aria-live="polite">
+  <span
+    class="animate-spin-flat rounded-full border-4 border-muted"
+    [class.h-8]="size === 'sm'" [class.w-8]="size === 'sm'"
+    [class.h-12]="size === 'md'" [class.w-12]="size === 'md'"
+    [class.h-16]="size === 'lg'" [class.w-16]="size === 'lg'"
+    [class.border-t-primary]="tone === 'primary'"
+    [class.border-t-white]="tone === 'white'"
+  ></span>
+  <span *ngIf="label" class="font-medium text-ink-muted">{{ label }}</span>
+</div>

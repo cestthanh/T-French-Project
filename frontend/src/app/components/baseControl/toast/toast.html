@@ -1,0 +1,22 @@
+<div
+  class="pointer-events-none fixed bottom-6 right-6 z-[300] flex w-[min(24rem,calc(100vw-3rem))] flex-col gap-3"
+  aria-live="polite"
+>
+  <div
+    *ngFor="let toast of toasts$ | async; trackBy: trackById"
+    class="animate-slide-in pointer-events-auto flex items-start gap-3 rounded-md px-5 py-4 text-white"
+    [ngClass]="fill[toast.tone]"
+    role="status"
+  >
+    <lucide-icon [name]="icon[toast.tone]" class="mt-0.5 h-5 w-5 shrink-0" [strokeWidth]="2.5"></lucide-icon>
+    <p class="flex-1 text-sm font-medium leading-snug">{{ toast.message }}</p>
+    <button
+      type="button"
+      (click)="toastService.dismiss(toast.id)"
+      class="shrink-0 rounded transition-transform duration-200 hover:scale-110"
+      aria-label="Đóng thông báo"
+    >
+      <lucide-icon name="x" class="h-4 w-4"></lucide-icon>
+    </button>
+  </div>
+</div>

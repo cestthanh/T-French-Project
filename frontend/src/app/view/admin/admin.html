@@ -1,0 +1,171 @@
+<tf-page-header title="Quản trị" subtitle="Quản lý người dùng và nội dung của nền tảng T-French"></tf-page-header>
+
+<!-- ══ STATS ═══════════════════════════════════════════════════════════════ -->
+<tf-spinner *ngIf="!stats" size="md" label="Đang tải số liệu..."></tf-spinner>
+
+<div *ngIf="stats" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+  <tf-stat
+    *ngFor="let card of statCards"
+    [icon]="card.icon"
+    [value]="card.value"
+    [label]="card.label"
+    [tone]="card.tone"
+  ></tf-stat>
+</div>
+
+<!-- ══ TABS ════════════════════════════════════════════════════════════════ -->
+<div class="mt-12">
+  <tf-tabs>
+    <!-- ── USERS ────────────────────────────────────────────────────────── -->
+    <tf-tab label="Người dùng" icon="users">
+      <div class="mb-6 flex flex-wrap items-center gap-4">
+        <div class="relative flex-1 basis-64">
+          <lucide-icon name="search"
+                       class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"></lucide-icon>
+          <!-- !bg-white: the dashboard canvas is already bg-muted, so the input's
+               default muted fill would leave it invisible. -->
+          <input tfInput [(ngModel)]="userSearch" (ngModelChange)="loadUsers()"
+                 placeholder="Tìm theo tên / email" aria-label="Tìm người dùng" class="!bg-white !pl-12" />
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button
+            *ngFor="let filter of roleFilters"
+            type="button"
+            (click)="filterRole(filter.value)"
+            class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            [ngClass]="userRole === filter.value ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+          >
+            {{ filter.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Table on desktop, stacked cards on mobile -->
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[44rem] border-collapse">
+          <thead>
+            <tr class="bg-ink text-left text-xs font-semibold uppercase tracking-wider text-white">
+              <th class="rounded-l-md px-5 py-4">Họ tên</th>
+              <th class="px-5 py-4">Email</th>
+              <th class="px-5 py-4">SĐT</th>
+              <th class="px-5 py-4">Role</th>
+              <th class="rounded-r-md px-5 py-4 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of users" class="border-b-2 border-muted transition-colors duration-200 hover:bg-muted">
+              <td class="px-5 py-4">
+                <span class="flex items-center gap-3">
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-white">
+                    {{ u.fullName[0] | uppercase }}
+                  </span>
+                  <span class="font-semibold">{{ u.fullName }}</span>
+                </span>
+              </td>
+              <td class="px-5 py-4 text-ink-muted">{{ u.email }}</td>
+              <td class="px-5 py-4 text-ink-muted">{{ u.phoneNumber || '—' }}</td>
+              <td class="px-5 py-4">
+                <select tfInput [ngModel]="u.role" (ngModelChange)="onChangeRole(u, $event)"
+                        class="!w-auto !py-2 !pl-3 !pr-8 text-sm font-semibold" [attr.aria-label]="'Role của ' + u.fullName">
+                  <option value="Student">Student</option>
+                  <option value="Teacher">Teacher</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </td>
+              <td class="px-5 py-4 text-right">
+                <button type="button" (click)="onDeleteUser(u.id, u.fullName)"
+                        tfButton variant="ghost" size="icon"
+                        class="!text-danger hover:!bg-danger-soft" [attr.aria-label]="'Xoá ' + u.fullName">
+                  <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <tf-empty-state *ngIf="!users.length" icon="users" title="Không tìm thấy người dùng"
+                      description="Thử đổi từ khoá hoặc bộ lọc role."></tf-empty-state>
+    </tf-tab>
+
+    <!-- ── BLOG ─────────────────────────────────────────────────────────── -->
+    <tf-tab label="Blog" icon="newspaper">
+      <div class="grid gap-6 xl:grid-cols-[1fr_22rem]">
+        <!-- Post list -->
+        <div class="flex flex-col gap-4">
+          <div *ngFor="let post of blogPosts" tfCard tone="white" padding="md"
+               class="flex flex-wrap items-center justify-between gap-4">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span tfBadge [tone]="post.isPublished ? 'success' : 'muted'" [square]="true">
+                  {{ post.isPublished ? 'Đã đăng' : 'Bản nháp' }}
+                </span>
+                <span *ngFor="let tag of getTags(post.tags)" tfBadge tone="primary-soft" [square]="true">{{ tag }}</span>
+              </div>
+              <h3 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h3>
+              <p class="mt-1 truncate text-sm text-ink-muted">/{{ post.slug }} · {{ post.author }}</p>
+            </div>
+
+            <div class="flex shrink-0 gap-2">
+              <button type="button" (click)="onTogglePublish(post)" tfButton variant="secondary" size="sm">
+                <lucide-icon [name]="post.isPublished ? 'eye-off' : 'upload'" class="h-4 w-4"></lucide-icon>
+                {{ post.isPublished ? 'Ẩn' : 'Đăng' }}
+              </button>
+              <button type="button" (click)="onDeleteBlog(post.id)" tfButton variant="ghost" size="icon"
+                      class="!text-danger hover:!bg-danger-soft" aria-label="Xoá bài viết">
+                <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+              </button>
+            </div>
+          </div>
+
+          <tf-empty-state *ngIf="!blogPosts.length" icon="newspaper" title="Chưa có bài viết nào"
+                          description="Tạo bài viết đầu tiên bằng form bên cạnh."></tf-empty-state>
+        </div>
+
+        <!-- Create form -->
+        <div tfCard tone="muted" padding="lg" class="h-fit">
+          <h3 class="text-lg font-extrabold tracking-heading">Viết bài mới</h3>
+
+          <form [formGroup]="blogForm" (ngSubmit)="onCreateBlog()" class="mt-5 flex flex-col gap-4">
+            <tf-field label="Tiêu đề" [required]="true" for="b-title">
+              <input id="b-title" tfInput formControlName="title" (blur)="autoSlug()" class="!bg-white" />
+            </tf-field>
+
+            <tf-field label="Slug" [required]="true" for="b-slug" hint="Tự sinh từ tiêu đề">
+              <input id="b-slug" tfInput formControlName="slug" class="!bg-white" />
+            </tf-field>
+
+            <tf-field label="Tóm tắt" for="b-summary">
+              <textarea id="b-summary" tfInput formControlName="summary" rows="2" class="!bg-white"></textarea>
+            </tf-field>
+
+            <tf-field label="Nội dung (HTML)" [required]="true" for="b-content">
+              <textarea id="b-content" tfInput formControlName="content" rows="6" class="!bg-white"
+                        placeholder="<p>Nội dung bài viết...</p>"></textarea>
+            </tf-field>
+
+            <tf-field label="Tags" for="b-tags" hint="Ngăn cách bằng dấu phẩy">
+              <input id="b-tags" tfInput formControlName="tags" placeholder="Du học, Tiếng Pháp" class="!bg-white" />
+            </tf-field>
+
+            <tf-field label="Ảnh bìa (URL)" for="b-cover">
+              <input id="b-cover" tfInput formControlName="coverImageUrl" placeholder="https://..." class="!bg-white" />
+            </tf-field>
+
+            <label class="flex cursor-pointer items-center gap-3 rounded-md bg-white p-4">
+              <input type="checkbox" formControlName="isPublished"
+                     class="h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-line text-primary focus:ring-primary" />
+              <span class="font-semibold text-ink-soft">Đăng ngay</span>
+            </label>
+
+            <button type="submit" tfButton variant="primary" size="md" [block]="true"
+                    [disabled]="blogForm.invalid || blogSaving">
+              {{ blogSaving ? 'Đang lưu...' : 'Tạo bài viết' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </tf-tab>
+  </tf-tabs>
+</div>

@@ -1,0 +1,20 @@
+<div class="flex flex-wrap gap-1 border-b-4 border-muted" role="tablist">
+  <button
+    *ngFor="let tab of tabs; let i = index"
+    type="button"
+    role="tab"
+    [attr.aria-selected]="tab.active"
+    (click)="select(i)"
+    class="-mb-1 flex items-center gap-2 border-b-4 px-5 py-3 text-sm font-semibold tracking-heading transition-all duration-200"
+    [ngClass]="tab.active
+      ? 'border-primary text-primary'
+      : 'border-transparent text-ink-muted hover:border-line hover:text-ink'"
+  >
+    <lucide-icon *ngIf="tab.icon" [name]="tab.icon" class="h-4 w-4"></lucide-icon>
+    {{ tab.label }}
+  </button>
+</div>
+
+<div class="pt-8">
+  <ng-content></ng-content>
+</div>

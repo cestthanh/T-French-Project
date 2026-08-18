@@ -1,0 +1,330 @@
+<app-navbar></app-navbar>
+
+<!-- ══ HERO ═══════════════════════════════════════════════════════ Blue block -->
+<section tfSection tone="primary" class="!py-0">
+  <!-- Poster decoration: flat geometry, low opacity, zero depth -->
+  <span class="pointer-events-none absolute -right-32 -top-40 h-[32rem] w-[32rem] rounded-full bg-white/10"></span>
+  <span class="pointer-events-none absolute -bottom-24 left-[8%] h-64 w-64 rotate-12 rounded-lg bg-white/10"></span>
+  <span class="pointer-events-none absolute right-[22%] top-[18%] hidden h-28 w-28 rounded-full bg-accent/40 lg:block"></span>
+
+  <div class="container-tf relative grid items-center gap-16 py-20 sm:py-28 lg:grid-cols-2">
+    <div>
+      <span tfBadge tone="accent">Trung tâm tiếng Pháp &amp; du học</span>
+
+      <h1 class="mt-6 text-5xl font-extrabold leading-[1.05] tracking-heading sm:text-6xl lg:text-7xl">
+        Học tiếng Pháp<br />
+        <span class="text-accent">cùng chuyên gia</span>
+      </h1>
+
+      <p class="mt-6 max-w-lg text-lg leading-relaxed text-white/80">
+        Nền tảng học tập hiện đại — bài tập, tài liệu, đặt lịch luyện nói với giáo viên.
+        Tất cả trong một nơi.
+      </p>
+
+      <div class="mt-10 flex flex-wrap items-center gap-4">
+        <a routerLink="/auth/register" tfButton variant="accent" size="xl">
+          Bắt đầu miễn phí
+          <lucide-icon name="arrow-right" class="h-5 w-5"></lucide-icon>
+        </a>
+        <a routerLink="/courses" tfButton variant="outline-white" size="xl">Xem khoá học</a>
+      </div>
+
+      <!-- Stat strip -->
+      <!-- flex-wrap, not a 3-column grid: equal columns are too narrow for a
+           value like "DELF/DALF", which then breaks mid-word. -->
+      <div class="mt-14 flex max-w-xl flex-wrap gap-x-10 gap-y-6 border-t-2 border-white/20 pt-8">
+        <div *ngFor="let s of heroStats">
+          <div class="whitespace-nowrap text-2xl font-extrabold tracking-heading text-accent sm:text-3xl lg:text-4xl">{{ s.value }}</div>
+          <p class="mt-1 text-xs font-semibold uppercase tracking-wider text-white/60">{{ s.label }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Abstract geometric composition instead of a floating glass card -->
+    <div class="relative hidden lg:block">
+      <div class="grid grid-cols-2 gap-5">
+        <div class="rounded-lg bg-white p-8">
+          <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft">
+            <lucide-icon name="graduation-cap" class="h-8 w-8 text-primary" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <p class="mt-5 text-xl font-bold tracking-heading text-ink">Luyện nói 1-1</p>
+          <p class="mt-2 text-ink-muted">Đặt lịch linh hoạt theo khung giờ của bạn</p>
+        </div>
+
+        <div class="mt-12 rounded-lg bg-accent p-8">
+          <span class="flex h-16 w-16 items-center justify-center rounded-full bg-white">
+            <lucide-icon name="clipboard-list" class="h-8 w-8 text-accent-dark" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <p class="mt-5 text-xl font-bold tracking-heading text-ink">Bài tập &amp; chấm</p>
+          <p class="mt-2 text-ink/70">Phản hồi chi tiết từ giáo viên</p>
+        </div>
+
+        <div class="-mt-4 rounded-lg bg-secondary p-8">
+          <span class="flex h-16 w-16 items-center justify-center rounded-full bg-white">
+            <lucide-icon name="folder-open" class="h-8 w-8 text-secondary" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <!-- ink, not white: white on brand orange only reaches ~2:1 -->
+          <p class="mt-5 text-xl font-bold tracking-heading text-ink">Tài liệu riêng</p>
+          <p class="mt-2 text-ink/70">Kho PDF &amp; video cho học viên</p>
+        </div>
+
+        <div class="mt-8 flex flex-col items-center justify-center gap-4 rounded-lg bg-white/10 p-8">
+          <tf-logo variant="full" tone="white" sizeClass="h-32"></tf-logo>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FEATURES ═════════════════════════════════════════════════ Gray block -->
+<section tfSection tone="muted">
+  <span class="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-primary-soft"></span>
+
+  <div class="container-tf relative">
+    <tf-section-heading
+      eyebrow="Tính năng"
+      title="Tất cả những gì bạn cần để học tốt"
+      lead="Một nền tảng duy nhất cho việc học, luyện tập và theo dõi tiến bộ."
+      [center]="true"
+    ></tf-section-heading>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div *ngFor="let f of features" tfCard tone="white" padding="lg" [interactive]="true">
+        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft transition-transform duration-200 group-hover:scale-110">
+          <lucide-icon [name]="f.icon" class="h-7 w-7 text-primary" [strokeWidth]="2.5"></lucide-icon>
+        </span>
+        <h3 class="mt-6 text-xl font-bold tracking-heading">{{ f.title }}</h3>
+        <p class="mt-2 leading-relaxed text-ink-muted">{{ f.desc }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ HOW IT WORKS ═════════════════════════════════════════════ Gold block -->
+<section tfSection tone="accent">
+  <span class="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rotate-12 rounded-lg bg-white/25"></span>
+
+  <div class="container-tf relative">
+    <tf-section-heading
+      eyebrow="Quy trình"
+      title="Bắt đầu chỉ với 4 bước"
+      [center]="true"
+      eyebrowClass="text-primary"
+      leadClass="text-ink/70"
+      lead="Từ lúc đăng ký đến buổi luyện nói đầu tiên, mọi thứ diễn ra trực tuyến."
+    ></tf-section-heading>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div *ngFor="let step of steps; let i = index" class="rounded-lg bg-white/40 p-8">
+        <span class="text-6xl font-extrabold leading-none tracking-heading text-primary/25">
+          {{ i + 1 }}
+        </span>
+        <span class="mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary">
+          <lucide-icon [name]="step.icon" class="h-6 w-6 text-white" [strokeWidth]="2.5"></lucide-icon>
+        </span>
+        <h3 class="mt-5 text-xl font-bold tracking-heading text-ink">{{ step.title }}</h3>
+        <p class="mt-2 leading-relaxed text-ink/70">{{ step.desc }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PRICING / COURSES ═══════════════════════════════════════ White block -->
+<section tfSection tone="white" id="courses">
+  <div class="container-tf">
+    <tf-section-heading
+      eyebrow="Học phí"
+      title="Chọn lộ trình phù hợp với bạn"
+      lead="Mọi khoá đều bao gồm tài liệu, bài tập có chấm điểm và buổi luyện nói 1-1."
+      [center]="true"
+    ></tf-section-heading>
+
+    <div class="grid items-start gap-6 lg:grid-cols-3">
+      <div
+        *ngFor="let tier of tiers"
+        tfCard
+        [tone]="tier.popular ? 'primary' : 'muted'"
+        padding="lg"
+        [interactive]="true"
+        [class.lg:scale-105]="tier.popular"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <span tfBadge [tone]="tier.popular ? 'accent' : 'primary-soft'" [square]="true">{{ tier.level }}</span>
+          <span *ngIf="tier.popular" tfBadge tone="dark">Phổ biến</span>
+        </div>
+
+        <h3 class="mt-6 text-2xl font-extrabold tracking-heading">{{ tier.name }}</h3>
+        <p class="mt-2" [ngClass]="tier.popular ? 'text-white/80' : 'text-ink-muted'">{{ tier.desc }}</p>
+
+        <div class="mt-6 flex items-baseline gap-2">
+          <span class="text-4xl font-extrabold tracking-heading">{{ tier.price }}</span>
+          <span [ngClass]="tier.popular ? 'text-white/70' : 'text-ink-muted'">{{ tier.period }}</span>
+        </div>
+
+        <ul class="mt-8 space-y-3">
+          <li *ngFor="let item of tier.items" class="flex items-start gap-3">
+            <lucide-icon
+              name="circle-check"
+              class="mt-0.5 h-5 w-5 shrink-0"
+              [ngClass]="tier.popular ? 'text-accent' : 'text-success'"
+              [strokeWidth]="2.5"
+            ></lucide-icon>
+            <span [ngClass]="tier.popular ? 'text-white/90' : 'text-ink-soft'">{{ item }}</span>
+          </li>
+        </ul>
+
+        <a
+          routerLink="/auth/register"
+          tfButton
+          [variant]="tier.popular ? 'accent' : 'outline'"
+          size="lg"
+          [block]="true"
+          class="mt-10"
+        >
+          Đăng ký ngay
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ BLOG PREVIEW ═════════════════════════════════════════════ Gray block -->
+<section tfSection tone="muted" *ngIf="latestPosts.length">
+  <div class="container-tf">
+    <div class="mb-12 flex flex-wrap items-end justify-between gap-6">
+      <tf-section-heading
+        [flush]="true"
+        eyebrow="Blog"
+        title="Kiến thức &amp; Tư vấn du học"
+      ></tf-section-heading>
+      <a routerLink="/blog" tfButton variant="outline" size="md">
+        Xem tất cả
+        <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
+      </a>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-3">
+      <article
+        *ngFor="let post of latestPosts"
+        [routerLink]="['/blog', post.slug]"
+        tfCard tone="white" padding="none" [interactive]="true"
+        class="overflow-hidden"
+      >
+        <div
+          class="h-44 bg-primary-soft bg-cover bg-center"
+          [style.background-image]="post.coverImageUrl ? 'url(' + post.coverImageUrl + ')' : null"
+        ></div>
+        <div class="p-6">
+          <h4 class="text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h4>
+          <p class="mt-2 line-clamp-2 text-ink-muted">{{ post.summary }}</p>
+          <p class="mt-4 text-sm font-semibold uppercase tracking-wider text-ink-muted">
+            {{ post.publishedAt | date: 'dd/MM/yyyy' }}
+          </p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FAQ ══════════════════════════════════════════════════════ White block -->
+<section tfSection tone="white">
+  <div class="container-tf max-w-4xl">
+    <tf-section-heading eyebrow="Giải đáp" title="Câu hỏi thường gặp" [center]="true"></tf-section-heading>
+
+    <!-- Thick borders are the divider here — the one exception the spec allows -->
+    <div class="border-t-2 border-line">
+      <div *ngFor="let item of faqs; let i = index" class="border-b-2 border-line">
+        <button
+          type="button"
+          class="flex w-full items-center justify-between gap-6 py-6 text-left transition-colors duration-200 hover:text-primary"
+          [attr.aria-expanded]="openFaq === i"
+          (click)="toggleFaq(i)"
+        >
+          <span class="text-lg font-bold tracking-heading">{{ item.q }}</span>
+          <lucide-icon
+            name="chevron-down"
+            class="h-6 w-6 shrink-0 transition-transform duration-200"
+            [class.rotate-180]="openFaq === i"
+            [strokeWidth]="2.5"
+          ></lucide-icon>
+        </button>
+        <p *ngIf="openFaq === i" class="animate-fade-up pb-6 leading-relaxed text-ink-muted">
+          {{ item.a }}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA ════════════════════════════════════════════════════════ Red block -->
+<!-- Red is reserved for this one band and for destructive actions, so it keeps
+     its urgency instead of becoming decoration. -->
+<section tfSection tone="danger" [compact]="true">
+  <span class="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10"></span>
+  <span class="pointer-events-none absolute -bottom-24 right-[10%] h-56 w-56 rotate-12 rounded-lg bg-white/10"></span>
+
+  <div class="container-tf relative flex flex-col items-center gap-8 text-center">
+    <h2 class="max-w-3xl text-4xl font-extrabold tracking-heading sm:text-5xl">
+      Sẵn sàng bắt đầu hành trình tiếng Pháp?
+    </h2>
+    <p class="max-w-xl text-lg text-white/80">
+      Tạo tài khoản miễn phí, truy cập tài liệu mẫu và đặt buổi luyện nói thử ngay hôm nay.
+    </p>
+    <a routerLink="/auth/register" tfButton variant="accent" size="xl">
+      Đăng ký miễn phí
+      <lucide-icon name="arrow-right" class="h-5 w-5"></lucide-icon>
+    </a>
+  </div>
+</section>
+
+<!-- ══ CONTACT ══════════════════════════════════════════════════ Gray block -->
+<section tfSection tone="muted" id="contact">
+  <div class="container-tf grid gap-16 lg:grid-cols-2">
+    <div>
+      <span class="eyebrow text-primary">Liên hệ</span>
+      <h2 class="mt-3 text-3xl font-extrabold tracking-heading sm:text-4xl">Đăng ký tư vấn miễn phí</h2>
+      <p class="mt-4 text-lg leading-relaxed text-ink-muted">
+        Chuyên gia của chúng tôi sẽ tư vấn lộ trình học và du học phù hợp nhất cho bạn.
+      </p>
+
+      <ul class="mt-10 space-y-5">
+        <li *ngFor="let c of contactDetails" class="flex items-center gap-4">
+          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white">
+            <lucide-icon [name]="c.icon" class="h-6 w-6 text-primary" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">{{ c.label }}</p>
+            <p class="text-lg font-semibold text-ink">{{ c.value }}</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <form [formGroup]="contactForm" (ngSubmit)="submitContact()" tfCard tone="white" padding="lg" class="flex flex-col gap-5">
+      <tf-field label="Họ và tên" [required]="true" for="contact-name">
+        <input id="contact-name" tfInput formControlName="name" placeholder="Nguyễn Văn A" />
+      </tf-field>
+
+      <tf-field label="Email" [required]="true" for="contact-email">
+        <input id="contact-email" tfInput type="email" formControlName="email" placeholder="you@example.com" />
+      </tf-field>
+
+      <tf-field label="Nội dung cần tư vấn" [required]="true" for="contact-message">
+        <textarea id="contact-message" tfInput formControlName="message" rows="4"
+                  placeholder="Mình muốn tìm hiểu lộ trình DELF B2..."></textarea>
+      </tf-field>
+
+      <button type="submit" tfButton variant="primary" size="lg" [block]="true"
+              [disabled]="contactForm.invalid || contactSent">
+        <lucide-icon [name]="contactSent ? 'circle-check' : 'send'" class="h-5 w-5"></lucide-icon>
+        {{ contactSent ? 'Đã gửi yêu cầu!' : 'Gửi yêu cầu tư vấn' }}
+      </button>
+
+      <p class="text-center text-sm text-ink-muted">
+        Chúng tôi phản hồi trong vòng 24 giờ làm việc.
+      </p>
+    </form>
+  </div>
+</section>
+
+<app-footer></app-footer>

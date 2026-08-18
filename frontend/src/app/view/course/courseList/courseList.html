@@ -1,0 +1,124 @@
+<app-navbar></app-navbar>
+
+<!-- ══ HERO ═══════════════════════════════════════════════════════ Blue block -->
+<section tfSection tone="primary" [compact]="true">
+  <span class="pointer-events-none absolute -right-24 -top-32 h-96 w-96 rounded-full bg-white/10"></span>
+  <span class="pointer-events-none absolute -bottom-20 left-[5%] h-56 w-56 rotate-12 rounded-lg bg-white/10"></span>
+
+  <div class="container-tf relative text-center">
+    <span tfBadge tone="accent">📚 Học tiếng Pháp cùng chuyên gia</span>
+    <h1 class="mx-auto mt-6 max-w-3xl text-4xl font-extrabold tracking-heading sm:text-5xl lg:text-6xl">
+      Khám phá khoá học <span class="text-accent">T-French</span>
+    </h1>
+    <p class="mx-auto mt-5 max-w-2xl text-lg text-white/80">
+      Từ cơ bản A1 đến nâng cao C1 — tất cả các cấp độ với giảng viên chuyên nghiệp.
+    </p>
+
+    <div class="mt-8 flex flex-wrap justify-center gap-2">
+      <span *ngFor="let level of levels" tfBadge tone="dark">{{ level }}</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ LIST ═══════════════════════════════════════════════════════ Gray block -->
+<section tfSection tone="muted">
+  <div class="container-tf">
+    <!-- Search -->
+    <div class="mb-10 flex flex-wrap items-center gap-4">
+      <div class="relative flex-1 basis-72">
+        <lucide-icon
+          name="search"
+          class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"
+        ></lucide-icon>
+        <input
+          tfInput
+          type="text"
+          [(ngModel)]="search"
+          placeholder="Tìm khoá học..."
+          aria-label="Tìm khoá học"
+          class="!bg-white !pl-12"
+        />
+      </div>
+      <span *ngIf="!loading" class="text-sm font-semibold uppercase tracking-wider text-ink-muted">
+        {{ filtered.length }} khoá học
+      </span>
+    </div>
+
+    <!-- Skeleton -->
+    <div *ngIf="loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="overflow-hidden rounded-lg bg-white">
+        <div class="h-44 animate-pulse bg-line"></div>
+        <div class="space-y-3 p-6">
+          <div class="h-5 w-3/4 animate-pulse rounded bg-line"></div>
+          <div class="h-4 w-full animate-pulse rounded bg-muted"></div>
+          <div class="h-4 w-1/2 animate-pulse rounded bg-muted"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div *ngIf="!loading && filtered.length" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <a
+        *ngFor="let course of filtered"
+        [routerLink]="['/courses', course.id]"
+        tfCard tone="white" padding="none" [interactive]="true"
+        class="overflow-hidden no-underline"
+      >
+        <!-- Thumbnail: a solid colour block when there is no image -->
+        <div
+          class="relative flex h-44 items-center justify-center bg-primary bg-cover bg-center"
+          [style.background-image]="course.imageUrl ? 'url(' + course.imageUrl + ')' : null"
+        >
+          <div *ngIf="!course.imageUrl" class="flex flex-col items-center gap-3">
+            <tf-logo variant="mark" tone="white" sizeClass="h-14" [decorative]="true"></tf-logo>
+            <span class="text-2xl font-extrabold tracking-heading text-white">
+              {{ course.level || 'FR' }}
+            </span>
+          </div>
+
+          <span *ngIf="course.level" tfBadge tone="dark" [square]="true" class="absolute left-4 top-4">
+            {{ course.level }}
+          </span>
+          <span *ngIf="course.price === 0" tfBadge tone="success" [square]="true" class="absolute right-4 top-4">
+            Miễn phí
+          </span>
+        </div>
+
+        <div class="p-6">
+          <h3 class="text-xl font-bold leading-snug tracking-heading text-ink">{{ course.title }}</h3>
+          <p class="mt-2 line-clamp-2 text-ink-muted">{{ course.description }}</p>
+
+          <div class="mt-5 flex flex-wrap gap-4 text-sm text-ink-muted">
+            <span class="flex items-center gap-1.5">
+              <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ course.teacher }}
+            </span>
+            <span class="flex items-center gap-1.5">
+              <lucide-icon name="users" class="h-4 w-4"></lucide-icon>{{ course.enrollmentCount }} học viên
+            </span>
+          </div>
+
+          <div class="mt-6 flex items-center justify-between border-t-2 border-muted pt-5">
+            <span class="text-xl font-extrabold tracking-heading"
+                  [ngClass]="course.price > 0 ? 'text-primary' : 'text-success'">
+              {{ course.price > 0 ? (course.price | number: '1.0-0') + 'đ' : 'Miễn phí' }}
+            </span>
+            <span class="flex items-center gap-1.5 text-sm font-semibold text-primary">
+              Xem chi tiết
+              <lucide-icon name="arrow-right" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"></lucide-icon>
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Empty -->
+    <tf-empty-state
+      *ngIf="!loading && !filtered.length"
+      icon="search"
+      title="Không tìm thấy khoá học"
+      description="Thử thay đổi từ khoá tìm kiếm của bạn."
+    ></tf-empty-state>
+  </div>
+</section>
+
+<app-footer></app-footer>

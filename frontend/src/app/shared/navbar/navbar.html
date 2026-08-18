@@ -1,0 +1,99 @@
+<header class="sticky top-0 z-[200] border-b-2 border-line bg-white">
+  <nav class="container-tf flex h-20 items-center gap-6">
+    <!-- Horizontal lockup: the mark alone plus the name in Outfit. The full
+         artwork stacks its wordmark under the arch and would be illegible
+         at navbar height. -->
+    <a routerLink="/home" class="flex shrink-0 items-center gap-3 no-underline">
+      <tf-logo variant="mark" sizeClass="h-10" [decorative]="true"></tf-logo>
+      <span class="text-xl font-extrabold tracking-heading text-primary">T-French</span>
+    </a>
+
+    <!-- Desktop links -->
+    <div class="hidden flex-1 items-center gap-1 md:flex">
+      <a
+        *ngFor="let link of links"
+        [routerLink]="link.path"
+        routerLinkActive="bg-muted text-ink"
+        [routerLinkActiveOptions]="{ exact: link.exact }"
+        class="rounded-md px-4 py-2 text-sm font-semibold text-ink-muted no-underline transition-all duration-200 hover:bg-muted hover:text-ink"
+      >
+        {{ link.label }}
+      </a>
+    </div>
+
+    <!-- Desktop auth area -->
+    <div class="ml-auto hidden items-center gap-3 md:flex">
+      <ng-container *ngIf="!auth.isLoggedIn">
+        <a routerLink="/auth/login" tfButton variant="ghost" size="sm">Đăng nhập</a>
+        <a routerLink="/auth/register" tfButton variant="primary" size="sm">Đăng ký miễn phí</a>
+      </ng-container>
+
+      <ng-container *ngIf="auth.isLoggedIn">
+        <a routerLink="/dashboard" tfButton variant="secondary" size="sm">
+          <lucide-icon name="layout-dashboard" class="h-4 w-4"></lucide-icon>
+          Dashboard
+        </a>
+        <button
+          type="button"
+          (click)="auth.logout()"
+          tfButton variant="ghost" size="icon"
+          aria-label="Đăng xuất"
+        >
+          <lucide-icon name="log-out" class="h-5 w-5"></lucide-icon>
+        </button>
+        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-base font-bold text-white">
+          {{ initial }}
+        </span>
+      </ng-container>
+    </div>
+
+    <!-- Mobile toggle -->
+    <button
+      type="button"
+      class="ml-auto md:hidden"
+      tfButton variant="secondary" size="icon"
+      (click)="menuOpen = !menuOpen"
+      [attr.aria-expanded]="menuOpen"
+      aria-label="Mở menu"
+    >
+      <lucide-icon [name]="menuOpen ? 'x' : 'menu'" class="h-5 w-5"></lucide-icon>
+    </button>
+  </nav>
+
+  <!-- Mobile panel: a solid colour block, not a floating dropdown -->
+  <div *ngIf="menuOpen" class="animate-fade-up border-t-2 border-line bg-white md:hidden">
+    <div class="container-tf flex flex-col gap-1 py-5">
+      <a
+        *ngFor="let link of links"
+        [routerLink]="link.path"
+        (click)="menuOpen = false"
+        routerLinkActive="bg-muted text-ink"
+        [routerLinkActiveOptions]="{ exact: link.exact }"
+        class="rounded-md px-4 py-3 font-semibold text-ink-soft no-underline transition-all duration-200 hover:bg-muted"
+      >
+        {{ link.label }}
+      </a>
+
+      <div class="mt-3 flex flex-col gap-2 border-t-2 border-line pt-4">
+        <ng-container *ngIf="!auth.isLoggedIn">
+          <a routerLink="/auth/login" (click)="menuOpen = false" tfButton variant="secondary" [block]="true">
+            Đăng nhập
+          </a>
+          <a routerLink="/auth/register" (click)="menuOpen = false" tfButton variant="primary" [block]="true">
+            Đăng ký miễn phí
+          </a>
+        </ng-container>
+        <ng-container *ngIf="auth.isLoggedIn">
+          <a routerLink="/dashboard" (click)="menuOpen = false" tfButton variant="primary" [block]="true">
+            <lucide-icon name="layout-dashboard" class="h-4 w-4"></lucide-icon>
+            Dashboard
+          </a>
+          <button type="button" (click)="auth.logout()" tfButton variant="secondary" [block]="true">
+            <lucide-icon name="log-out" class="h-4 w-4"></lucide-icon>
+            Đăng xuất
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</header>

@@ -2,6 +2,10 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    /* Enables absolute imports rooted at the project, e.g.
+       `import { AuthService } from 'src/app/services/authService';` */
+    "baseUrl": "./",
+    "forceConsistentCasingInFileNames": true,
     "outDir": "./dist/out-tsc",
     "strict": true,
     "noImplicitOverride": true,

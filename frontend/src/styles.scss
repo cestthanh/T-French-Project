@@ -1,146 +1,62 @@
-// ─── Angular Material (must be FIRST - @use before @import) ─────────────────
-@use '@angular/material' as mat;
+/* ─── Typography: Outfit, the geometric sans that mirrors the UI's shapes ──── */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-$primary: mat.define-palette(mat.$indigo-palette, 700);
-$accent: mat.define-palette(mat.$amber-palette, 600);
-$warn: mat.define-palette(mat.$red-palette);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-$theme: mat.define-light-theme((color: (primary: $primary, accent: $accent, warn: $warn),
-      typography: mat.define-typography-config($font-family: 'Inter, sans-serif'),
-      density: 0,
-    ));
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
 
-@include mat.all-component-themes($theme);
+  body {
+    @apply bg-white font-sans text-base text-ink;
+  }
 
-// ─── Google Fonts (CSS @import after @use) ────────────────────────────────────
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+  /* Typography as Interface — size and weight carry the hierarchy. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold leading-tight tracking-heading;
+  }
 
-// ─── CSS Variables ────────────────────────────────────────────────────────────
-:root {
-  --primary: #3949ab;
-  --primary-dark: #283593;
-  --accent: #ffb300;
-  --bg: #f5f7ff;
-  --surface: #ffffff;
-  --text: #1a1a2e;
-  --text-muted: #6c7293;
-  --border: #e2e8f0;
-  --shadow: 0 4px 24px rgba(57, 73, 171, .08);
-  --radius: 12px;
-  --sidebar-width: 240px;
-}
+  /* No shadows means focus states must be solid, high-contrast outlines. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
 
-// ─── Reset & Base ─────────────────────────────────────────────────────────────
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+  /* Flat inputs: no inner shadow, no default browser chrome. */
+  input,
+  textarea,
+  select,
+  button {
+    @apply font-sans;
+  }
 
-html,
-body {
-  height: 100%;
-  font-family: 'Inter', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
-}
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    @apply m-0 appearance-none;
+  }
 
-a {
-  color: var(--primary);
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
+  ::selection {
+    @apply bg-primary text-white;
   }
 }
 
-// ─── Layout Utilities ─────────────────────────────────────────────────────────
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.page-header {
-  padding: 32px 0 16px;
-}
-
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.page-subtitle {
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-// ─── Cards ────────────────────────────────────────────────────────────────────
-.card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 24px;
-  border: 1px solid var(--border);
-  transition: box-shadow .2s;
-
-  &:hover {
-    box-shadow: 0 8px 32px rgba(57, 73, 171, .14);
-  }
-}
-
-// ─── Buttons ─────────────────────────────────────────────────────────────────
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, transform .1s;
-
-  &:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-  }
-}
-
-// ─── Badge chips ─────────────────────────────────────────────────────────────
-.badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: .75rem;
-  font-weight: 600;
-
-  &.admin {
-    background: #e8eaf6;
-    color: var(--primary);
+@layer components {
+  /* The one shared layout primitive: a rigid, centred 12-column container. */
+  .container-tf {
+    @apply mx-auto w-full max-w-container px-5 sm:px-8;
   }
 
-  &.teacher {
-    background: #e0f2f1;
-    color: #00695c;
+  /* Uppercase eyebrow label used above section headings. */
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-wider;
   }
-
-  &.student {
-    background: #fff8e1;
-    color: #e65100;
-  }
-}
-
-// ─── Material overrides ───────────────────────────────────────────────────────
-.mat-mdc-card {
-  border-radius: var(--radius) !important;
-  box-shadow: var(--shadow) !important;
-}
-
-.mat-toolbar {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
