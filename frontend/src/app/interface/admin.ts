@@ -27,9 +27,18 @@ export interface AdminBlogPost {
   isPublished: boolean;
   publishedAt?: string;
   createdAt: string;
+  /** Last content edit; absent until the post has been edited. */
+  updatedAt?: string;
   author: string;
   tags?: string;
   coverImageUrl?: string;
+}
+
+/** What `GET /api/admin/blog/{id}` returns: the list row plus the body fields
+ * the list leaves out, because editing needs them and listing does not. */
+export interface AdminBlogPostDetail extends AdminBlogPost {
+  summary?: string;
+  content: string;
 }
 
 export interface CreateBlogPostRequest {

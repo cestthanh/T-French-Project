@@ -96,4 +96,10 @@ public class BlogPost
     public bool IsPublished { get; set; } = false;
     public DateTime? PublishedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Last content edit. Null until the post is first edited, so the
+    /// admin list can tell "never touched since writing" from "revised".
+    /// Publishing and unpublishing do not count — that is what PublishedAt is
+    /// for, and treating it as an edit would make the column meaningless.</summary>
+    public DateTime? UpdatedAt { get; set; }
 }

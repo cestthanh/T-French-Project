@@ -29,6 +29,11 @@ export class Admin implements OnInit {
   userRole = '';
   blogSaving = false;
   blogForm: FormGroup;
+  /** Id of the post being edited, or null when the form is creating a new one.
+   * One form serves both: the fields are identical, and a separate edit form
+   * would be the same markup twice. */
+  editingBlogId: number | null = null;
+  blogLoading = false;
   statCards: AdminStatCard[] = [];
 
   leads: ContactLead[] = [];
@@ -141,19 +146,60 @@ export class Admin implements OnInit {
     });
   }
 
-  onCreateBlog(): void {
-    if (this.blogForm.invalid) return;
-    this.blogSaving = true;
-    this.adminService.createBlogPost(this.blogForm.value).subscribe({
-      next: () => {
-        this.blogSaving = false;
-        this.blogForm.reset({ isPublished: false });
-        this.loadBlog();
-        this.toast.success('Đã tạo bài viết!');
+  startEditBlog(post: AdminBlogPost): void {
+    this.blogLoading = true;
+    this.editingBlogId = post.id;
+
+    // Fetched rather than filled from the list row: the list carries no
+    // summary or content, and patching from it would blank the body.
+    this.adminService.getBlogPost(post.id).subscribe({
+      next: full => {
+        this.blogLoading = false;
+        this.blogForm.patchValue({
+          title: full.title,
+          slug: full.slug,
+          summary: full.summary ?? '',
+          content: full.content,
+          tags: full.tags ?? '',
+          coverImageUrl: full.coverImageUrl ?? '',
+          isPublished: full.isPublished,
+        });
       },
       error: () => {
+        this.blogLoading = false;
+        this.editingBlogId = null;
+        this.toast.error('Không tải được nội dung bài viết.');
+      },
+    });
+  }
+
+  cancelEditBlog(): void {
+    this.editingBlogId = null;
+    this.blogForm.reset({ isPublished: false });
+  }
+
+  onSaveBlog(): void {
+    if (this.blogForm.invalid || this.blogSaving) return;
+    this.blogSaving = true;
+
+    const id = this.editingBlogId;
+    const request = id == null
+      ? this.adminService.createBlogPost(this.blogForm.value)
+      : this.adminService.updateBlogPost(id, this.blogForm.value);
+
+    request.subscribe({
+      next: () => {
         this.blogSaving = false;
-        this.toast.error('Lỗi khi tạo bài — kiểm tra slug đã tồn tại chưa.');
+        this.editingBlogId = null;
+        this.blogForm.reset({ isPublished: false });
+        this.loadBlog();
+        this.toast.success(id == null ? 'Đã tạo bài viết!' : 'Đã lưu thay đổi!');
+      },
+      error: err => {
+        this.blogSaving = false;
+        // A 409 carries the actual clashing slug, which is more use than the
+        // old blanket "check whether the slug exists" guess.
+        this.toast.error(err?.error?.message || 'Lỗi khi lưu bài viết.');
       },
     });
   }

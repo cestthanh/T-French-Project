@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AdminBlogPost, AdminStats, AdminUser, CreateBlogPostRequest } from 'src/app/interface';
+import { AdminBlogPost, AdminBlogPostDetail, AdminStats, AdminUser, CreateBlogPostRequest } from 'src/app/interface';
 import { uriAdmin } from './Uri/RequestUri/uriAdmin';
 
 @Injectable({ providedIn: 'root' })
@@ -31,8 +31,17 @@ export class AdminService {
     return this.http.get<AdminBlogPost[]>(uriAdmin.BLOG);
   }
 
+  /** Full post including summary and content — the list omits both. */
+  getBlogPost(id: number): Observable<AdminBlogPostDetail> {
+    return this.http.get<AdminBlogPostDetail>(uriAdmin.BLOG_DETAIL(id));
+  }
+
   createBlogPost(data: CreateBlogPostRequest): Observable<any> {
     return this.http.post(uriAdmin.BLOG, data);
+  }
+
+  updateBlogPost(id: number, data: CreateBlogPostRequest): Observable<any> {
+    return this.http.put(uriAdmin.UPDATE_BLOG(id), data);
   }
 
   togglePublish(id: number): Observable<any> {

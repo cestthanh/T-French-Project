@@ -80,19 +80,46 @@ public class AdminController(AppDbContext db) : ControllerBase
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => new {
                 p.Id, p.Title, p.Slug, p.IsPublished, p.PublishedAt, p.CreatedAt,
-                Author = p.Author!.FullName, p.Tags, p.CoverImageUrl
+                p.UpdatedAt, Author = p.Author!.FullName, p.Tags, p.CoverImageUrl
             }).ToListAsync();
         return Ok(posts);
+    }
+
+    // The list above omits Summary and Content — they are large and nothing on
+    // that screen renders them. Editing needs the whole post, so it gets its
+    // own endpoint rather than bloating every list response.
+    [HttpGet("blog/{id}")]
+    public async Task<IActionResult> GetBlogPost(int id)
+    {
+        var post = await db.BlogPosts
+            .Include(p => p.Author)
+            .Where(p => p.Id == id)
+            .Select(p => new {
+                p.Id, p.Title, p.Slug, p.Summary, p.Content, p.Tags, p.CoverImageUrl,
+                p.IsPublished, p.PublishedAt, p.CreatedAt, p.UpdatedAt,
+                Author = p.Author!.FullName
+            })
+            .FirstOrDefaultAsync();
+
+        return post == null ? NotFound() : Ok(post);
     }
 
     [HttpPost("blog")]
     public async Task<IActionResult> CreateBlogPost([FromBody] CreateAdminBlogDto dto)
     {
         var adminId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var slug = Normalise(dto.Slug);
+
+        // Slug is uniquely indexed. Without this check the clash arrives as a
+        // DbUpdateException and the caller sees a 500 for what is really a
+        // "pick another slug".
+        if (await db.BlogPosts.AnyAsync(p => p.Slug == slug))
+            return Conflict(new { message = $"Slug \"{slug}\" đã được dùng cho bài viết khác." });
+
         var post = new BlogPost
         {
             Title = dto.Title,
-            Slug  = dto.Slug.ToLower().Replace(" ", "-"),
+            Slug  = slug,
             Summary = dto.Summary,
             Content = dto.Content,
             Tags = dto.Tags,
@@ -104,6 +131,36 @@ public class AdminController(AppDbContext db) : ControllerBase
         db.BlogPosts.Add(post);
         await db.SaveChangesAsync();
         return Ok(post);
+    }
+
+    [HttpPut("blog/{id}")]
+    public async Task<IActionResult> UpdateBlogPost(int id, [FromBody] CreateAdminBlogDto dto)
+    {
+        var post = await db.BlogPosts.FindAsync(id);
+        if (post == null) return NotFound();
+
+        var slug = Normalise(dto.Slug);
+        if (await db.BlogPosts.AnyAsync(p => p.Slug == slug && p.Id != id))
+            return Conflict(new { message = $"Slug \"{slug}\" đã được dùng cho bài viết khác." });
+
+        post.Title = dto.Title;
+        post.Slug = slug;
+        post.Summary = dto.Summary;
+        post.Content = dto.Content;
+        post.Tags = dto.Tags;
+        post.CoverImageUrl = dto.CoverImageUrl;
+        post.UpdatedAt = DateTime.UtcNow;
+
+        // PublishedAt is the moment it first went live, so it is stamped only
+        // on the transition. Editing a live post must not move its date.
+        if (dto.IsPublished != post.IsPublished)
+        {
+            post.IsPublished = dto.IsPublished;
+            post.PublishedAt = dto.IsPublished ? (post.PublishedAt ?? DateTime.UtcNow) : null;
+        }
+
+        await db.SaveChangesAsync();
+        return Ok(new { post.Id, post.Title, post.Slug, post.IsPublished, post.UpdatedAt });
     }
 
     [HttpPatch("blog/{id}/publish")]
@@ -126,6 +183,10 @@ public class AdminController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    /// <summary>Lower-cased, spaces to hyphens — the same shape the public blog
+    /// route looks posts up by.</summary>
+    private static string Normalise(string slug) => slug.Trim().ToLower().Replace(" ", "-");
 }
 
 // DTOs local to Admin scope

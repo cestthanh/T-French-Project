@@ -213,10 +213,17 @@
                 <span *ngFor="let tag of getTags(post.tags)" tfBadge tone="primary-soft" [square]="true">{{ tag }}</span>
               </div>
               <h3 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h3>
-              <p class="mt-1 truncate text-sm text-ink-muted">/{{ post.slug }} · {{ post.author }}</p>
+              <p class="mt-1 truncate text-sm text-ink-muted">
+                /{{ post.slug }} · {{ post.author }}
+                <span *ngIf="post.updatedAt"> · sửa {{ post.updatedAt | date: 'dd/MM/yy HH:mm' }}</span>
+              </p>
             </div>
 
             <div class="flex shrink-0 gap-2">
+              <button type="button" (click)="startEditBlog(post)" tfButton variant="outline" size="sm">
+                <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+                Sửa
+              </button>
               <button type="button" (click)="onTogglePublish(post)" tfButton variant="secondary" size="sm">
                 <lucide-icon [name]="post.isPublished ? 'eye-off' : 'upload'" class="h-4 w-4"></lucide-icon>
                 {{ post.isPublished ? 'Ẩn' : 'Đăng' }}
@@ -233,12 +240,26 @@
         </div>
 
         <!-- Create form -->
-        <div tfCard tone="muted" padding="lg" class="h-fit">
-          <h3 class="text-lg font-extrabold tracking-heading">Viết bài mới</h3>
+        <div tfCard [tone]="editingBlogId ? 'primary-soft' : 'muted'" padding="lg" class="h-fit">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="text-lg font-extrabold tracking-heading">
+              {{ editingBlogId ? 'Sửa bài viết' : 'Viết bài mới' }}
+            </h3>
+            <button *ngIf="editingBlogId" type="button" (click)="cancelEditBlog()"
+                    tfButton variant="ghost" size="icon" aria-label="Huỷ sửa, quay lại viết bài mới">
+              <lucide-icon name="x" class="h-5 w-5"></lucide-icon>
+            </button>
+          </div>
 
-          <form [formGroup]="blogForm" (ngSubmit)="onCreateBlog()" class="mt-5 flex flex-col gap-4">
+          <tf-spinner *ngIf="blogLoading" size="sm" label="Đang tải nội dung..." class="mt-5 block"></tf-spinner>
+
+          <form [formGroup]="blogForm" (ngSubmit)="onSaveBlog()" class="mt-5 flex flex-col gap-4"
+                [class.hidden]="blogLoading">
             <tf-field label="Tiêu đề" [required]="true" for="b-title">
-              <input id="b-title" tfInput formControlName="title" (blur)="autoSlug()" class="!bg-white" />
+              <!-- Auto-slug only while creating: regenerating the slug of a
+                   published post would break every link already pointing at it. -->
+              <input id="b-title" tfInput formControlName="title"
+                     (blur)="editingBlogId ? null : autoSlug()" class="!bg-white" />
             </tf-field>
 
             <tf-field label="Slug" [required]="true" for="b-slug" hint="Tự sinh từ tiêu đề">
@@ -265,12 +286,12 @@
             <label class="flex cursor-pointer items-center gap-3 rounded-md bg-white p-4">
               <input type="checkbox" formControlName="isPublished"
                      class="h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-line text-primary focus:ring-primary" />
-              <span class="font-semibold text-ink-soft">Đăng ngay</span>
+              <span class="font-semibold text-ink-soft">{{ editingBlogId ? 'Hiển thị công khai' : 'Đăng ngay' }}</span>
             </label>
 
             <button type="submit" tfButton variant="primary" size="md" [block]="true"
                     [disabled]="blogForm.invalid || blogSaving">
-              {{ blogSaving ? 'Đang lưu...' : 'Tạo bài viết' }}
+              {{ blogSaving ? 'Đang lưu...' : editingBlogId ? 'Lưu thay đổi' : 'Tạo bài viết' }}
             </button>
           </form>
         </div>
