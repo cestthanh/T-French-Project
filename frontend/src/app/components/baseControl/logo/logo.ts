@@ -11,8 +11,9 @@ import { Component, Input } from '@angular/core';
  * meant for navy/dark blocks only.
  */
 @Component({
-  selector: 'tf-logo',
-  templateUrl: './logo.html',
+    selector: 'tf-logo',
+    templateUrl: './logo.html',
+    standalone: false
 })
 export class BaseLogo {
   @Input() variant: 'mark' | 'full' = 'mark';

@@ -34,7 +34,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
         if (CurrentRole == "Student")
         {
             var enrolledCourseIds = await db.Enrollments
-                .Where(e => e.StudentId == CurrentUserId && e.IsActive)
+                .Where(e => e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active)
                 .Select(e => e.CourseId)
                 .ToListAsync();
             query = query.Where(a => enrolledCourseIds.Contains(a.CourseId));
@@ -105,6 +105,15 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
     [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> Create([FromBody] CreateAssignmentDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
+            return BadRequest(new { message = "Tiêu đề bài tập phải có từ 1 đến 200 ký tự." });
+        if (dto.DueDate <= DateTime.UtcNow)
+            return BadRequest(new { message = "Hạn nộp phải ở tương lai." });
+        if (dto.AttachmentId != null && !string.IsNullOrWhiteSpace(dto.AttachmentUrl))
+            return BadRequest(new { message = "Chỉ được chọn một file hoặc một link đính kèm." });
+        if (!string.IsNullOrWhiteSpace(dto.AttachmentUrl) && !IsHttpUrl(dto.AttachmentUrl))
+            return BadRequest(new { message = "Link đính kèm phải là URL http/https hợp lệ." });
+
         var course = await db.Courses.FindAsync(dto.CourseId);
         if (course == null) return BadRequest(new { message = "Khoá học không tồn tại." });
 
@@ -136,6 +145,14 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
                                     .FirstOrDefaultAsync(x => x.Id == id);
         if (a == null) return NotFound();
         if (CurrentRole == "Teacher" && a.Course!.TeacherId != CurrentUserId) return Forbid();
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
+            return BadRequest(new { message = "Tiêu đề bài tập phải có từ 1 đến 200 ký tự." });
+        if (dto.CourseId != a.CourseId)
+            return BadRequest(new { message = "Không thể chuyển bài tập sang khoá học khác sau khi tạo." });
+        if (dto.AttachmentId != null && !string.IsNullOrWhiteSpace(dto.AttachmentUrl))
+            return BadRequest(new { message = "Chỉ được chọn một file hoặc một link đính kèm." });
+        if (!string.IsNullOrWhiteSpace(dto.AttachmentUrl) && !IsHttpUrl(dto.AttachmentUrl))
+            return BadRequest(new { message = "Link đính kèm phải là URL http/https hợp lệ." });
 
         a.Title = dto.Title; a.Description = dto.Description; a.DueDate = dto.DueDate;
 
@@ -198,11 +215,17 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
     {
         var assignment = await db.Assignments.FindAsync(id);
         if (assignment == null) return NotFound();
+        if (dto.FileId == null && string.IsNullOrWhiteSpace(dto.FileUrl) && string.IsNullOrWhiteSpace(dto.Note))
+            return BadRequest(new { message = "Bài nộp cần có file, link hoặc ghi chú." });
+        if (dto.FileId != null && !string.IsNullOrWhiteSpace(dto.FileUrl))
+            return BadRequest(new { message = "Chỉ được nộp một file hoặc một link." });
+        if (!string.IsNullOrWhiteSpace(dto.FileUrl) && !IsHttpUrl(dto.FileUrl))
+            return BadRequest(new { message = "Link bài làm phải là URL http/https hợp lệ." });
 
         // Enrolment was previously unchecked here: any student could hand work
         // in to any course's assignment just by knowing its id.
         var enrolled = await db.Enrollments.AnyAsync(e =>
-            e.CourseId == assignment.CourseId && e.StudentId == CurrentUserId && e.IsActive);
+            e.CourseId == assignment.CourseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
         if (!enrolled) return Forbid();
 
         // Check already submitted
@@ -239,6 +262,9 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
     [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> Grade(int assignmentId, int submissionId, [FromBody] GradeSubmissionDto dto)
     {
+        if (dto.Grade is < 0 or > 10)
+            return BadRequest(new { message = "Điểm phải nằm trong khoảng từ 0 đến 10." });
+
         var submission = await db.Submissions
             .Include(s => s.Assignment).ThenInclude(a => a!.Course)
             .FirstOrDefaultAsync(s => s.Id == submissionId && s.AssignmentId == assignmentId);
@@ -288,7 +314,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
             return await db.Courses.AnyAsync(c => c.Id == a.CourseId && c.TeacherId == CurrentUserId);
 
         return await db.Enrollments.AnyAsync(e =>
-            e.CourseId == a.CourseId && e.StudentId == CurrentUserId && e.IsActive);
+            e.CourseId == a.CourseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
     }
 
     /// <summary>See ResourcesController.OwnsFileAsync — stops a caller
@@ -312,4 +338,8 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
     {
         f.PublicId, f.OriginalName, f.ContentType, f.SizeBytes
     };
+
+    private static bool IsHttpUrl(string value) =>
+        Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 }

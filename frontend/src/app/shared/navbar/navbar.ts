@@ -2,8 +2,9 @@ import { Component, HostListener } from '@angular/core';
 import { AuthService } from 'src/app/services/authService';
 
 @Component({
-  selector: 'app-navbar',
-  templateUrl: './navbar.html',
+    selector: 'app-navbar',
+    templateUrl: './navbar.html',
+    standalone: false
 })
 export class Navbar {
   menuOpen = false;

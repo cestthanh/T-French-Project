@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService } from 'src/app/services/adminService';
-import { AdminStats, AdminUser, AdminBlogPost, ContactLead, LeadStats, LeadStatus } from 'src/app/interface';
+import { AdminStats, AdminUser, AdminBlogPost, AuditLogEntry, ContactLead, LeadStats, LeadStatus, ManagedClass } from 'src/app/interface';
 import { LeadService } from 'src/app/services/leadService';
 import { ToastService } from 'src/app/services/share/toastService';
 import { StatTone } from 'src/app/components/baseControl/stat/stat';
+import { ClassService } from 'src/app/services/classService';
 
 interface AdminStatCard { icon: string; value: number; label: string; tone: StatTone; }
 
@@ -18,8 +19,9 @@ const LEAD_STATUSES: { value: LeadStatus | ''; label: string; tone: string }[] =
 ];
 
 @Component({
-  selector: 'app-admin-page',
-  templateUrl: './admin.html',
+    selector: 'app-admin-page',
+    templateUrl: './admin.html',
+    standalone: false
 })
 export class Admin implements OnInit {
   stats: AdminStats | null = null;
@@ -44,6 +46,12 @@ export class Admin implements OnInit {
    * are long enough that several open at once is unreadable. */
   editingNoteId: number | null = null;
   noteDraft = '';
+  managedClasses: ManagedClass[] = [];
+  convertingLeadId: number | null = null;
+  selectedLeadClassId: number | null = null;
+  newAccountNotice: { email: string; password: string } | null = null;
+  auditLogs: AuditLogEntry[] = [];
+  auditAction = '';
 
   readonly leadStatuses = LEAD_STATUSES;
 
@@ -59,6 +67,7 @@ export class Admin implements OnInit {
     private leadService: LeadService,
     private fb: FormBuilder,
     private toast: ToastService,
+    private classService: ClassService,
   ) {
     this.blogForm = this.fb.group({
       title: ['', Validators.required],
@@ -77,6 +86,8 @@ export class Admin implements OnInit {
     this.loadBlog();
     this.loadLeads();
     this.loadLeadStats();
+    this.classService.getManaged().subscribe({ next: rows => (this.managedClasses = rows.filter(x => x.status === 'Open')) });
+    this.loadAuditLog();
   }
 
   loadStats(): void {
@@ -125,6 +136,18 @@ export class Admin implements OnInit {
     this.adminService.deleteUser(id).subscribe({
       next: () => { this.loadUsers(); this.toast.success('Đã xoá tài khoản.'); },
       error: () => this.toast.error('Không xoá được — tài khoản này còn dữ liệu liên quan.'),
+    });
+  }
+
+  onToggleUserActive(user: AdminUser): void {
+    const action = user.isActive ? 'vô hiệu hoá' : 'kích hoạt lại';
+    if (!confirm(`Bạn có chắc muốn ${action} tài khoản "${user.fullName}"?`)) return;
+    this.adminService.setUserActive(user.id, !user.isActive).subscribe({
+      next: res => {
+        user.isActive = res.isActive;
+        this.toast.success(res.isActive ? 'Đã kích hoạt tài khoản.' : 'Đã vô hiệu hoá tài khoản.');
+      },
+      error: err => this.toast.error(err?.error?.message || `Không thể ${action} tài khoản.`),
     });
   }
 
@@ -278,11 +301,40 @@ export class Admin implements OnInit {
     });
   }
 
+  startConvertLead(lead: ContactLead): void {
+    this.convertingLeadId = lead.id;
+    this.selectedLeadClassId = null;
+  }
+
+  convertLead(lead: ContactLead): void {
+    if (!this.selectedLeadClassId) return;
+    this.leadService.convert(lead.id, this.selectedLeadClassId).subscribe({
+      next: result => {
+        if (result.createdAccount && result.temporaryPassword) {
+          this.newAccountNotice = { email: lead.email, password: result.temporaryPassword };
+        }
+        this.convertingLeadId = null;
+        this.selectedLeadClassId = null;
+        this.loadLeads();
+        this.loadLeadStats();
+        this.toast.success('Đã tạo/liên kết học viên và ghi danh vào lớp.');
+      },
+      error: err => this.toast.error(err?.error?.message ?? 'Không thể chuyển lead thành học viên.'),
+    });
+  }
+
   leadTone(status: LeadStatus): string {
     return LEAD_STATUSES.find(s => s.value === status)?.tone ?? 'muted';
   }
 
   leadLabel(status: LeadStatus): string {
     return LEAD_STATUSES.find(s => s.value === status)?.label ?? status;
+  }
+
+  loadAuditLog(): void {
+    this.adminService.getAuditLog(this.auditAction || undefined).subscribe({
+      next: rows => (this.auditLogs = rows),
+      error: () => this.toast.error('Không tải được nhật ký bảo mật.'),
+    });
   }
 }

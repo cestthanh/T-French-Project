@@ -9,7 +9,8 @@ export type SectionTone = 'white' | 'muted' | 'primary' | 'secondary' | 'accent'
  * so the background tone *is* the divider. Alternate tones down the page.
  */
 @Directive({
-  selector: 'section[tfSection]',
+    selector: 'section[tfSection]',
+    standalone: false
 })
 export class BaseSection {
   @Input() tone: SectionTone = 'white';

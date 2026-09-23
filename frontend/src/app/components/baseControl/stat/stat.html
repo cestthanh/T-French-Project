@@ -1,20 +1,26 @@
 <!-- block: icon chip + number, for dashboards -->
-<div *ngIf="variant === 'block'" class="rounded-lg bg-white p-6">
-  <span
-    class="mb-4 flex h-14 w-14 items-center justify-center rounded-full"
-    [ngClass]="chip[tone]"
-  >
-    <lucide-icon [name]="icon" class="h-6 w-6" [strokeWidth]="2.5"></lucide-icon>
-  </span>
-  <div class="flex items-baseline gap-2">
-    <span class="text-4xl font-extrabold tracking-heading" [ngClass]="text[tone]">{{ value }}</span>
-    <span *ngIf="urgent && +value > 0" class="h-2.5 w-2.5 rounded-full bg-danger"></span>
+@if (variant === 'block') {
+  <div class="rounded-lg bg-white p-6">
+    <span
+      class="mb-4 flex h-14 w-14 items-center justify-center rounded-full"
+      [ngClass]="chip[tone]"
+      >
+      <lucide-icon [name]="icon" class="h-6 w-6" [strokeWidth]="2.5"></lucide-icon>
+    </span>
+    <div class="flex items-baseline gap-2">
+      <span class="text-4xl font-extrabold tracking-heading" [ngClass]="text[tone]">{{ value }}</span>
+      @if (urgent && +value > 0) {
+        <span class="h-2.5 w-2.5 rounded-full bg-danger"></span>
+      }
+    </div>
+    <p class="mt-1 text-sm font-medium text-ink-muted">{{ label }}</p>
   </div>
-  <p class="mt-1 text-sm font-medium text-ink-muted">{{ label }}</p>
-</div>
+}
 
 <!-- plain: number over label, for the hero strip -->
-<div *ngIf="variant === 'plain'">
-  <div class="text-3xl font-extrabold tracking-heading sm:text-4xl" [ngClass]="text[tone]">{{ value }}</div>
-  <p class="mt-1 text-sm font-medium uppercase tracking-wider text-ink-muted">{{ label }}</p>
-</div>
+@if (variant === 'plain') {
+  <div>
+    <div class="text-3xl font-extrabold tracking-heading sm:text-4xl" [ngClass]="text[tone]">{{ value }}</div>
+    <p class="mt-1 text-sm font-medium uppercase tracking-wider text-ink-muted">{{ label }}</p>
+  </div>
+}

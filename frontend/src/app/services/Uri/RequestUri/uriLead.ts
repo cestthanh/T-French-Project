@@ -7,4 +7,5 @@ export class uriLead {
 
   static UPDATE = (id: number) => `${uriConfig.LEAD}/${id}`;
   static DELETE = (id: number) => `${uriConfig.LEAD}/${id}`;
+  static CONVERT = (id: number) => `${uriConfig.LEAD}/${id}/convert`;
 }

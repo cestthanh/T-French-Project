@@ -6,12 +6,13 @@ import { DashboardService } from 'src/app/services/dashboardService';
 import { AdminService } from 'src/app/services/adminService';
 import { StatTone } from 'src/app/components/baseControl/stat/stat';
 
-interface NavItem { path: string; label: string; icon: string; exact?: boolean; adminOnly?: boolean; }
+interface NavItem { path: string; label: string; icon: string; exact?: boolean; adminOnly?: boolean; staffOnly?: boolean; }
 interface StatCard { icon: string; label: string; value: string | number; tone: StatTone; urgent?: boolean; }
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: './dashboard.html',
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.html',
+    standalone: false
 })
 export class Dashboard implements OnInit {
   loading = true;
@@ -25,14 +26,17 @@ export class Dashboard implements OnInit {
   readonly nav: NavItem[] = [
     { path: '/dashboard', label: 'Tổng quan', icon: 'layout-dashboard', exact: true },
     { path: '/dashboard/assignments', label: 'Bài tập', icon: 'clipboard-list' },
+    { path: '/dashboard/quizzes', label: 'Bài kiểm tra', icon: 'clipboard-check' },
     { path: '/dashboard/resources', label: 'Tài liệu', icon: 'folder-open' },
     { path: '/dashboard/bookings', label: 'Đặt lịch', icon: 'calendar-days' },
+    { path: '/dashboard/classes', label: 'Khoá & lớp', icon: 'school', staffOnly: true },
     { path: '/dashboard/profile', label: 'Hồ sơ', icon: 'user-cog' },
     { path: '/dashboard/admin', label: 'Quản trị', icon: 'shield-check', adminOnly: true },
   ];
 
   readonly quickActions = [
     { path: '/dashboard/assignments', label: 'Bài tập', icon: 'clipboard-list', tone: 'primary-soft' as const, iconClass: 'text-primary' },
+    { path: '/dashboard/quizzes', label: 'Bài kiểm tra', icon: 'clipboard-check', tone: 'primary-soft' as const, iconClass: 'text-primary' },
     { path: '/dashboard/resources', label: 'Tài liệu', icon: 'folder-open', tone: 'secondary-soft' as const, iconClass: 'text-secondary' },
     { path: '/dashboard/bookings', label: 'Đặt lịch', icon: 'calendar-days', tone: 'accent-soft' as const, iconClass: 'text-accent-dark' },
     // 'white', not 'muted' — the dashboard canvas is bg-muted, so a muted card
@@ -41,7 +45,9 @@ export class Dashboard implements OnInit {
   ];
 
   get visibleNav(): NavItem[] {
-    return this.nav.filter(item => !item.adminOnly || this.auth.isAdmin);
+    return this.nav.filter(item =>
+      (!item.adminOnly || this.auth.isAdmin) &&
+      (!item.staffOnly || this.auth.isAdmin || this.auth.currentUser?.role === 'Teacher'));
   }
 
   get initial(): string {

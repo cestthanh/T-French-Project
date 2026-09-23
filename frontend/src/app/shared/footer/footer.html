@@ -19,12 +19,14 @@
       <div>
         <p class="eyebrow text-accent">Khám phá</p>
         <ul class="mt-5 space-y-3">
-          <li *ngFor="let link of navLinks">
-            <a [routerLink]="link.path"
-               class="text-white/70 no-underline transition-colors duration-200 hover:text-white">
-              {{ link.label }}
-            </a>
-          </li>
+          @for (link of navLinks; track link) {
+            <li>
+              <a [routerLink]="link.path"
+                class="text-white/70 no-underline transition-colors duration-200 hover:text-white">
+                {{ link.label }}
+              </a>
+            </li>
+          }
         </ul>
       </div>
 

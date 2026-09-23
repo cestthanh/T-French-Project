@@ -31,12 +31,14 @@
 
       <!-- Stat strip -->
       <!-- flex-wrap, not a 3-column grid: equal columns are too narrow for a
-           value like "DELF/DALF", which then breaks mid-word. -->
+      value like "DELF/DALF", which then breaks mid-word. -->
       <div class="mt-14 flex max-w-xl flex-wrap gap-x-10 gap-y-6 border-t-2 border-white/20 pt-8">
-        <div *ngFor="let s of heroStats">
-          <div class="whitespace-nowrap text-2xl font-extrabold tracking-heading text-accent sm:text-3xl lg:text-4xl">{{ s.value }}</div>
-          <p class="mt-1 text-xs font-semibold uppercase tracking-wider text-white/60">{{ s.label }}</p>
-        </div>
+        @for (s of heroStats; track s) {
+          <div>
+            <div class="whitespace-nowrap text-2xl font-extrabold tracking-heading text-accent sm:text-3xl lg:text-4xl">{{ s.value }}</div>
+            <p class="mt-1 text-xs font-semibold uppercase tracking-wider text-white/60">{{ s.label }}</p>
+          </div>
+        }
       </div>
     </div>
 
@@ -89,13 +91,15 @@
     ></tf-section-heading>
 
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div *ngFor="let f of features" tfCard tone="white" padding="lg" [interactive]="true">
-        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft transition-transform duration-200 group-hover:scale-110">
-          <lucide-icon [name]="f.icon" class="h-7 w-7 text-primary" [strokeWidth]="2.5"></lucide-icon>
-        </span>
-        <h3 class="mt-6 text-xl font-bold tracking-heading">{{ f.title }}</h3>
-        <p class="mt-2 leading-relaxed text-ink-muted">{{ f.desc }}</p>
-      </div>
+      @for (f of features; track f) {
+        <div tfCard tone="white" padding="lg" [interactive]="true">
+          <span class="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft transition-transform duration-200 group-hover:scale-110">
+            <lucide-icon [name]="f.icon" class="h-7 w-7 text-primary" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <h3 class="mt-6 text-xl font-bold tracking-heading">{{ f.title }}</h3>
+          <p class="mt-2 leading-relaxed text-ink-muted">{{ f.desc }}</p>
+        </div>
+      }
     </div>
   </div>
 </section>
@@ -115,16 +119,18 @@
     ></tf-section-heading>
 
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      <div *ngFor="let step of steps; let i = index" class="rounded-lg bg-white/40 p-8">
-        <span class="text-6xl font-extrabold leading-none tracking-heading text-primary/25">
-          {{ i + 1 }}
-        </span>
-        <span class="mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary">
-          <lucide-icon [name]="step.icon" class="h-6 w-6 text-white" [strokeWidth]="2.5"></lucide-icon>
-        </span>
-        <h3 class="mt-5 text-xl font-bold tracking-heading text-ink">{{ step.title }}</h3>
-        <p class="mt-2 leading-relaxed text-ink/70">{{ step.desc }}</p>
-      </div>
+      @for (step of steps; track step; let i = $index) {
+        <div class="rounded-lg bg-white/40 p-8">
+          <span class="text-6xl font-extrabold leading-none tracking-heading text-primary/25">
+            {{ i + 1 }}
+          </span>
+          <span class="mt-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary">
+            <lucide-icon [name]="step.icon" class="h-6 w-6 text-white" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <h3 class="mt-5 text-xl font-bold tracking-heading text-ink">{{ step.title }}</h3>
+          <p class="mt-2 leading-relaxed text-ink/70">{{ step.desc }}</p>
+        </div>
+      }
     </div>
   </div>
 </section>
@@ -140,91 +146,94 @@
     ></tf-section-heading>
 
     <div class="grid items-start gap-6 lg:grid-cols-3">
-      <div
-        *ngFor="let tier of tiers"
-        tfCard
-        [tone]="tier.popular ? 'primary' : 'muted'"
-        padding="lg"
-        [interactive]="true"
-        [class.lg:scale-105]="tier.popular"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <span tfBadge [tone]="tier.popular ? 'accent' : 'primary-soft'" [square]="true">{{ tier.level }}</span>
-          <span *ngIf="tier.popular" tfBadge tone="dark">Phổ biến</span>
+      @for (tier of tiers; track tier) {
+        <div
+          tfCard
+          [tone]="tier.popular ? 'primary' : 'muted'"
+          padding="lg"
+          [interactive]="true"
+          [class.lg:scale-105]="tier.popular"
+          >
+          <div class="flex items-start justify-between gap-3">
+            <span tfBadge [tone]="tier.popular ? 'accent' : 'primary-soft'" [square]="true">{{ tier.level }}</span>
+            @if (tier.popular) {
+              <span tfBadge tone="dark">Phổ biến</span>
+            }
+          </div>
+          <h3 class="mt-6 text-2xl font-extrabold tracking-heading">{{ tier.name }}</h3>
+          <p class="mt-2" [ngClass]="tier.popular ? 'text-white/80' : 'text-ink-muted'">{{ tier.desc }}</p>
+          <div class="mt-6 flex items-baseline gap-2">
+            <span class="text-4xl font-extrabold tracking-heading">{{ tier.price }}</span>
+            <span [ngClass]="tier.popular ? 'text-white/70' : 'text-ink-muted'">{{ tier.period }}</span>
+          </div>
+          <ul class="mt-8 space-y-3">
+            @for (item of tier.items; track item) {
+              <li class="flex items-start gap-3">
+                <lucide-icon
+                  name="circle-check"
+                  class="mt-0.5 h-5 w-5 shrink-0"
+                  [ngClass]="tier.popular ? 'text-accent' : 'text-success'"
+                  [strokeWidth]="2.5"
+                ></lucide-icon>
+                <span [ngClass]="tier.popular ? 'text-white/90' : 'text-ink-soft'">{{ item }}</span>
+              </li>
+            }
+          </ul>
+          <a
+            routerLink="/auth/register"
+            tfButton
+            [variant]="tier.popular ? 'accent' : 'outline'"
+            size="lg"
+            [block]="true"
+            class="mt-10"
+            >
+            Đăng ký ngay
+          </a>
         </div>
-
-        <h3 class="mt-6 text-2xl font-extrabold tracking-heading">{{ tier.name }}</h3>
-        <p class="mt-2" [ngClass]="tier.popular ? 'text-white/80' : 'text-ink-muted'">{{ tier.desc }}</p>
-
-        <div class="mt-6 flex items-baseline gap-2">
-          <span class="text-4xl font-extrabold tracking-heading">{{ tier.price }}</span>
-          <span [ngClass]="tier.popular ? 'text-white/70' : 'text-ink-muted'">{{ tier.period }}</span>
-        </div>
-
-        <ul class="mt-8 space-y-3">
-          <li *ngFor="let item of tier.items" class="flex items-start gap-3">
-            <lucide-icon
-              name="circle-check"
-              class="mt-0.5 h-5 w-5 shrink-0"
-              [ngClass]="tier.popular ? 'text-accent' : 'text-success'"
-              [strokeWidth]="2.5"
-            ></lucide-icon>
-            <span [ngClass]="tier.popular ? 'text-white/90' : 'text-ink-soft'">{{ item }}</span>
-          </li>
-        </ul>
-
-        <a
-          routerLink="/auth/register"
-          tfButton
-          [variant]="tier.popular ? 'accent' : 'outline'"
-          size="lg"
-          [block]="true"
-          class="mt-10"
-        >
-          Đăng ký ngay
-        </a>
-      </div>
+      }
     </div>
   </div>
 </section>
 
 <!-- ══ BLOG PREVIEW ═════════════════════════════════════════════ Gray block -->
-<section tfSection tone="muted" *ngIf="latestPosts.length">
-  <div class="container-tf">
-    <div class="mb-12 flex flex-wrap items-end justify-between gap-6">
-      <tf-section-heading
-        [flush]="true"
-        eyebrow="Blog"
-        title="Kiến thức &amp; Tư vấn du học"
-      ></tf-section-heading>
-      <a routerLink="/blog" tfButton variant="outline" size="md">
-        Xem tất cả
-        <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
-      </a>
+@if (latestPosts.length) {
+  <section tfSection tone="muted">
+    <div class="container-tf">
+      <div class="mb-12 flex flex-wrap items-end justify-between gap-6">
+        <tf-section-heading
+          [flush]="true"
+          eyebrow="Blog"
+          title="Kiến thức &amp; Tư vấn du học"
+        ></tf-section-heading>
+        <a routerLink="/blog" tfButton variant="outline" size="md">
+          Xem tất cả
+          <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
+        </a>
+      </div>
+      <div class="grid gap-6 md:grid-cols-3">
+        @for (post of latestPosts; track post) {
+          <article
+            [routerLink]="['/blog', post.slug]"
+            tfCard tone="white" padding="none" [interactive]="true"
+            class="overflow-hidden"
+            >
+            <div
+              class="h-44 bg-primary-soft bg-cover bg-center"
+              [style.background-image]="post.coverImageUrl ? 'url(' + post.coverImageUrl + ')' : null"
+            ></div>
+            <div class="p-6">
+              <h4 class="text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h4>
+              <p class="mt-2 line-clamp-2 text-ink-muted">{{ post.summary }}</p>
+              <p class="mt-4 text-sm font-semibold uppercase tracking-wider text-ink-muted">
+                {{ post.publishedAt | date: 'dd/MM/yyyy' }}
+              </p>
+            </div>
+          </article>
+        }
+      </div>
     </div>
-
-    <div class="grid gap-6 md:grid-cols-3">
-      <article
-        *ngFor="let post of latestPosts"
-        [routerLink]="['/blog', post.slug]"
-        tfCard tone="white" padding="none" [interactive]="true"
-        class="overflow-hidden"
-      >
-        <div
-          class="h-44 bg-primary-soft bg-cover bg-center"
-          [style.background-image]="post.coverImageUrl ? 'url(' + post.coverImageUrl + ')' : null"
-        ></div>
-        <div class="p-6">
-          <h4 class="text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h4>
-          <p class="mt-2 line-clamp-2 text-ink-muted">{{ post.summary }}</p>
-          <p class="mt-4 text-sm font-semibold uppercase tracking-wider text-ink-muted">
-            {{ post.publishedAt | date: 'dd/MM/yyyy' }}
-          </p>
-        </div>
-      </article>
-    </div>
-  </div>
-</section>
+  </section>
+}
 
 <!-- ══ FAQ ══════════════════════════════════════════════════════ White block -->
 <section tfSection tone="white">
@@ -233,32 +242,36 @@
 
     <!-- Thick borders are the divider here — the one exception the spec allows -->
     <div class="border-t-2 border-line">
-      <div *ngFor="let item of faqs; let i = index" class="border-b-2 border-line">
-        <button
-          type="button"
-          class="flex w-full items-center justify-between gap-6 py-6 text-left transition-colors duration-200 hover:text-primary"
-          [attr.aria-expanded]="openFaq === i"
-          (click)="toggleFaq(i)"
-        >
-          <span class="text-lg font-bold tracking-heading">{{ item.q }}</span>
-          <lucide-icon
-            name="chevron-down"
-            class="h-6 w-6 shrink-0 transition-transform duration-200"
-            [class.rotate-180]="openFaq === i"
-            [strokeWidth]="2.5"
-          ></lucide-icon>
-        </button>
-        <p *ngIf="openFaq === i" class="animate-fade-up pb-6 leading-relaxed text-ink-muted">
-          {{ item.a }}
-        </p>
-      </div>
+      @for (item of faqs; track item; let i = $index) {
+        <div class="border-b-2 border-line">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between gap-6 py-6 text-left transition-colors duration-200 hover:text-primary"
+            [attr.aria-expanded]="openFaq === i"
+            (click)="toggleFaq(i)"
+            >
+            <span class="text-lg font-bold tracking-heading">{{ item.q }}</span>
+            <lucide-icon
+              name="chevron-down"
+              class="h-6 w-6 shrink-0 transition-transform duration-200"
+              [class.rotate-180]="openFaq === i"
+              [strokeWidth]="2.5"
+            ></lucide-icon>
+          </button>
+          @if (openFaq === i) {
+            <p class="animate-fade-up pb-6 leading-relaxed text-ink-muted">
+              {{ item.a }}
+            </p>
+          }
+        </div>
+      }
     </div>
   </div>
 </section>
 
 <!-- ══ CTA ════════════════════════════════════════════════════════ Red block -->
 <!-- Red is reserved for this one band and for destructive actions, so it keeps
-     its urgency instead of becoming decoration. -->
+its urgency instead of becoming decoration. -->
 <section tfSection tone="danger" [compact]="true">
   <span class="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-white/10"></span>
   <span class="pointer-events-none absolute -bottom-24 right-[10%] h-56 w-56 rotate-12 rounded-lg bg-white/10"></span>
@@ -288,15 +301,17 @@
       </p>
 
       <ul class="mt-10 space-y-5">
-        <li *ngFor="let c of contactDetails" class="flex items-center gap-4">
-          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white">
-            <lucide-icon [name]="c.icon" class="h-6 w-6 text-primary" [strokeWidth]="2.5"></lucide-icon>
-          </span>
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">{{ c.label }}</p>
-            <p class="text-lg font-semibold text-ink">{{ c.value }}</p>
-          </div>
-        </li>
+        @for (c of contactDetails; track c) {
+          <li class="flex items-center gap-4">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white">
+              <lucide-icon [name]="c.icon" class="h-6 w-6 text-primary" [strokeWidth]="2.5"></lucide-icon>
+            </span>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">{{ c.label }}</p>
+              <p class="text-lg font-semibold text-ink">{{ c.value }}</p>
+            </div>
+          </li>
+        }
       </ul>
     </div>
 
@@ -315,11 +330,11 @@
 
       <tf-field label="Nội dung cần tư vấn" [required]="true" for="contact-message">
         <textarea id="contact-message" tfInput formControlName="message" rows="4"
-                  placeholder="Mình muốn tìm hiểu lộ trình DELF B2..."></textarea>
+        placeholder="Mình muốn tìm hiểu lộ trình DELF B2..."></textarea>
       </tf-field>
 
       <button type="submit" tfButton variant="primary" size="lg" [block]="true"
-              [disabled]="contactForm.invalid || contactSending || contactSent">
+        [disabled]="contactForm.invalid || contactSending || contactSent">
         <lucide-icon
           [name]="contactSent ? 'circle-check' : contactSending ? 'loader-circle' : 'send'"
           class="h-5 w-5"

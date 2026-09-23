@@ -3,8 +3,9 @@ import { CourseService } from 'src/app/services/courseService';
 import { Course } from 'src/app/interface';
 
 @Component({
-  selector: 'app-course-list',
-  templateUrl: './courseList.html',
+    selector: 'app-course-list',
+    templateUrl: './courseList.html',
+    standalone: false
 })
 export class CourseList implements OnInit {
   courses: Course[] = [];

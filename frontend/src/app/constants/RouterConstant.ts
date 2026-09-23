@@ -20,6 +20,8 @@ export const RouterConstant = {
   assignments: 'dashboard/assignments',
   resources: 'dashboard/resources',
   bookings: 'dashboard/bookings',
+  classes: 'dashboard/classes',
+  quizzes: 'dashboard/quizzes',
   profile: 'dashboard/profile',
   admin: 'dashboard/admin',
 };
@@ -38,6 +40,8 @@ export const RouteSegment = {
   assignments: 'assignments',
   resources: 'resources',
   bookings: 'bookings',
+  classes: 'classes',
+  quizzes: 'quizzes',
   profile: 'profile',
   admin: 'admin',
 };

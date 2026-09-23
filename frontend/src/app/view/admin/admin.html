@@ -1,17 +1,22 @@
 <tf-page-header title="Quản trị" subtitle="Quản lý người dùng và nội dung của nền tảng T-French"></tf-page-header>
 
 <!-- ══ STATS ═══════════════════════════════════════════════════════════════ -->
-<tf-spinner *ngIf="!stats" size="md" label="Đang tải số liệu..."></tf-spinner>
+@if (!stats) {
+  <tf-spinner size="md" label="Đang tải số liệu..."></tf-spinner>
+}
 
-<div *ngIf="stats" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-  <tf-stat
-    *ngFor="let card of statCards"
-    [icon]="card.icon"
-    [value]="card.value"
-    [label]="card.label"
-    [tone]="card.tone"
-  ></tf-stat>
-</div>
+@if (stats) {
+  <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    @for (card of statCards; track card) {
+      <tf-stat
+        [icon]="card.icon"
+        [value]="card.value"
+        [label]="card.label"
+        [tone]="card.tone"
+      ></tf-stat>
+    }
+  </div>
+}
 
 <!-- ══ TABS ════════════════════════════════════════════════════════════════ -->
 <div class="mt-12">
@@ -21,281 +26,390 @@
       <div class="mb-6 flex flex-wrap items-center gap-4">
         <div class="relative flex-1 basis-64">
           <lucide-icon name="search"
-                       class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"></lucide-icon>
+          class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"></lucide-icon>
           <!-- !bg-white: the dashboard canvas is already bg-muted, so the input's
-               default muted fill would leave it invisible. -->
+          default muted fill would leave it invisible. -->
           <input tfInput [(ngModel)]="userSearch" (ngModelChange)="loadUsers()"
-                 placeholder="Tìm theo tên / email" aria-label="Tìm người dùng" class="!bg-white !pl-12" />
+            placeholder="Tìm theo tên / email" aria-label="Tìm người dùng" class="!bg-white !pl-12" />
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            @for (filter of roleFilters; track filter) {
+              <button
+                type="button"
+                (click)="filterRole(filter.value)"
+                class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+                [ngClass]="userRole === filter.value ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+                >
+                {{ filter.label }}
+              </button>
+            }
+          </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          <button
-            *ngFor="let filter of roleFilters"
-            type="button"
-            (click)="filterRole(filter.value)"
-            class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-            [ngClass]="userRole === filter.value ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
-          >
-            {{ filter.label }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Table on desktop, stacked cards on mobile -->
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[44rem] border-collapse">
-          <thead>
-            <tr class="bg-ink text-left text-xs font-semibold uppercase tracking-wider text-white">
-              <th class="rounded-l-md px-5 py-4">Họ tên</th>
-              <th class="px-5 py-4">Email</th>
-              <th class="px-5 py-4">SĐT</th>
-              <th class="px-5 py-4">Role</th>
-              <th class="rounded-r-md px-5 py-4 text-right">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let u of users" class="border-b-2 border-muted transition-colors duration-200 hover:bg-muted">
-              <td class="px-5 py-4">
-                <span class="flex items-center gap-3">
-                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-white">
-                    {{ u.fullName[0] | uppercase }}
-                  </span>
-                  <span class="font-semibold">{{ u.fullName }}</span>
-                </span>
-              </td>
-              <td class="px-5 py-4 text-ink-muted">{{ u.email }}</td>
-              <td class="px-5 py-4 text-ink-muted">{{ u.phoneNumber || '—' }}</td>
-              <td class="px-5 py-4">
-                <select tfInput [ngModel]="u.role" (ngModelChange)="onChangeRole(u, $event)"
-                        class="!w-auto !py-2 !pl-3 !pr-8 text-sm font-semibold" [attr.aria-label]="'Role của ' + u.fullName">
-                  <option value="Student">Student</option>
-                  <option value="Teacher">Teacher</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </td>
-              <td class="px-5 py-4 text-right">
-                <button type="button" (click)="onDeleteUser(u.id, u.fullName)"
-                        tfButton variant="ghost" size="icon"
-                        class="!text-danger hover:!bg-danger-soft" [attr.aria-label]="'Xoá ' + u.fullName">
-                  <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
-                </button>
-              </td>
-            </tr>
+        <!-- Table on desktop, stacked cards on mobile -->
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[44rem] border-collapse">
+            <thead>
+              <tr class="bg-ink text-left text-xs font-semibold uppercase tracking-wider text-white">
+                <th class="rounded-l-md px-5 py-4">Họ tên</th>
+                <th class="px-5 py-4">Email</th>
+                <th class="px-5 py-4">SĐT</th>
+                <th class="px-5 py-4">Role</th>
+                <th class="rounded-r-md px-5 py-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of users; track u) {
+                <tr class="border-b-2 border-muted transition-colors duration-200 hover:bg-muted">
+                  <td class="px-5 py-4">
+                    <span class="flex items-center gap-3">
+                      <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-extrabold text-white">
+                        {{ u.fullName[0] | uppercase }}
+                      </span>
+                      <span>
+                        <span class="font-semibold">{{ u.fullName }}</span>
+                        @if (!u.isActive) {
+                          <span tfBadge tone="muted" [square]="true" class="ml-2">Đã khoá</span>
+                        }
+                      </span>
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-ink-muted">{{ u.email }}</td>
+                  <td class="px-5 py-4 text-ink-muted">{{ u.phoneNumber || '—' }}</td>
+                  <td class="px-5 py-4">
+                    <select tfInput [ngModel]="u.role" (ngModelChange)="onChangeRole(u, $event)"
+                      class="!w-auto !py-2 !pl-3 !pr-8 text-sm font-semibold" [attr.aria-label]="'Role của ' + u.fullName">
+                      <option value="Student">Student</option>
+                      <option value="Teacher">Teacher</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </td>
+                  <td class="px-5 py-4 text-right">
+                    <button type="button" (click)="onToggleUserActive(u)"
+                      tfButton variant="ghost" size="icon"
+                      [ngClass]="u.isActive ? '!text-danger hover:!bg-danger-soft' : '!text-success hover:!bg-success-soft'"
+                      [attr.aria-label]="(u.isActive ? 'Vô hiệu hoá ' : 'Kích hoạt ') + u.fullName">
+                    <lucide-icon [name]="u.isActive ? 'user-x' : 'user-check'" class="h-5 w-5"></lucide-icon>
+                  </button>
+                </td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
 
-      <tf-empty-state *ngIf="!users.length" icon="users" title="Không tìm thấy người dùng"
-                      description="Thử đổi từ khoá hoặc bộ lọc role."></tf-empty-state>
+      @if (!users.length) {
+        <tf-empty-state icon="users" title="Không tìm thấy người dùng"
+        description="Thử đổi từ khoá hoặc bộ lọc role."></tf-empty-state>
+      }
     </tf-tab>
 
     <!-- ── ENQUIRIES ────────────────────────────────────────────────────── -->
     <tf-tab
       [label]="leadStats?.new ? 'Tư vấn (' + leadStats!.new + ' mới)' : 'Tư vấn'"
       icon="mail"
-    >
+      >
+      @if (newAccountNotice) {
+        <div class="mb-6 rounded-lg border-2 border-accent bg-accent-soft p-5">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="font-extrabold">Tài khoản học viên vừa được tạo</h3>
+              <p class="mt-2 text-sm">Email: <strong>{{ newAccountNotice.email }}</strong></p>
+              <p class="mt-1 text-sm">Mật khẩu tạm thời: <code class="rounded bg-white px-2 py-1 font-bold">{{ newAccountNotice.password }}</code></p>
+              <p class="mt-2 text-xs text-ink-muted">Thông tin này chỉ hiển thị trong phiên hiện tại. Hãy gửi riêng cho học viên và yêu cầu đổi mật khẩu.</p>
+            </div>
+            <button type="button" tfButton variant="ghost" size="icon" (click)="newAccountNotice = null" aria-label="Đóng"><lucide-icon name="x" class="h-5 w-5"></lucide-icon></button>
+          </div>
+        </div>
+      }
       <div class="mb-6 flex flex-wrap items-center gap-4">
         <div class="relative flex-1 basis-64">
           <lucide-icon name="search"
-                       class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"></lucide-icon>
+          class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted"></lucide-icon>
           <input tfInput [(ngModel)]="leadSearch" (ngModelChange)="loadLeads()"
-                 placeholder="Tìm theo tên / email / SĐT" aria-label="Tìm yêu cầu tư vấn"
-                 class="!bg-white !pl-12" />
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-          <button
-            *ngFor="let filter of leadStatuses"
-            type="button"
-            (click)="filterLeadStatus(filter.value)"
-            class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-            [ngClass]="leadStatus === filter.value ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
-          >
-            {{ filter.label }}
-          </button>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-4">
-        <div *ngFor="let lead of leads" tfCard tone="white" padding="lg">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <span tfBadge [tone]="$any(leadTone(lead.status))" [square]="true">
-                  {{ leadLabel(lead.status) }}
-                </span>
-                <span *ngIf="lead.interest" tfBadge tone="primary-soft" [square]="true">{{ lead.interest }}</span>
-              </div>
-
-              <h3 class="mt-3 text-lg font-bold tracking-heading">{{ lead.fullName }}</h3>
-
-              <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-muted">
-                <a [href]="'mailto:' + lead.email" class="flex items-center gap-1.5 hover:text-primary">
-                  <lucide-icon name="mail" class="h-4 w-4"></lucide-icon>{{ lead.email }}
-                </a>
-                <a *ngIf="lead.phoneNumber" [href]="'tel:' + lead.phoneNumber"
-                   class="flex items-center gap-1.5 hover:text-primary">
-                  <lucide-icon name="phone" class="h-4 w-4"></lucide-icon>{{ lead.phoneNumber }}
-                </a>
-                <span class="flex items-center gap-1.5">
-                  <lucide-icon name="calendar" class="h-4 w-4"></lucide-icon>
-                  {{ lead.createdAt | date: 'dd/MM/yyyy HH:mm' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-2">
-              <select tfInput [ngModel]="lead.status" (ngModelChange)="onChangeLeadStatus(lead, $event)"
-                      class="!w-auto !py-2 !pl-3 !pr-8 text-sm font-semibold"
-                      [attr.aria-label]="'Trạng thái của ' + lead.fullName">
-                <option value="New">Mới</option>
-                <option value="Contacted">Đã liên hệ</option>
-                <option value="Enrolled">Đã ghi danh</option>
-                <option value="Closed">Đã đóng</option>
-              </select>
-              <button type="button" (click)="onDeleteLead(lead)" tfButton variant="ghost" size="icon"
-                      class="!text-danger hover:!bg-danger-soft" [attr.aria-label]="'Xoá yêu cầu của ' + lead.fullName">
-                <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
-              </button>
-            </div>
+            placeholder="Tìm theo tên / email / SĐT" aria-label="Tìm yêu cầu tư vấn"
+            class="!bg-white !pl-12" />
           </div>
 
-          <p class="mt-5 whitespace-pre-line rounded-md bg-muted p-5 text-ink-soft">{{ lead.message }}</p>
-
-          <!-- Follow-up note: internal, never shown to the enquirer. -->
-          <div class="mt-5 border-t-2 border-muted pt-5">
-            <div *ngIf="editingNoteId !== lead.id" class="flex flex-wrap items-center justify-between gap-3">
-              <p class="flex items-start gap-2 text-sm" [ngClass]="lead.note ? 'text-ink-soft' : 'text-ink-muted'">
-                <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0"></lucide-icon>
-                {{ lead.note || 'Chưa có ghi chú nội bộ.' }}
-              </p>
-              <button type="button" tfButton variant="outline" size="sm" (click)="startNote(lead)">
-                <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
-                {{ lead.note ? 'Sửa ghi chú' : 'Thêm ghi chú' }}
+          <div class="flex flex-wrap gap-2">
+            @for (filter of leadStatuses; track filter) {
+              <button
+                type="button"
+                (click)="filterLeadStatus(filter.value)"
+                class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+                [ngClass]="leadStatus === filter.value ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+                >
+                {{ filter.label }}
               </button>
-            </div>
-
-            <div *ngIf="editingNoteId === lead.id" class="flex flex-col gap-3">
-              <textarea tfInput rows="3" [(ngModel)]="noteDraft"
-                        placeholder="Đã gọi 19/08, hẹn tư vấn lại thứ 5..."
-                        [attr.aria-label]="'Ghi chú cho ' + lead.fullName"></textarea>
-              <div class="flex gap-3">
-                <button type="button" tfButton variant="primary" size="sm" (click)="saveNote(lead)">Lưu</button>
-                <button type="button" tfButton variant="secondary" size="sm" (click)="editingNoteId = null">Huỷ</button>
-              </div>
-            </div>
+            }
           </div>
-
-          <p *ngIf="lead.handledBy" class="mt-4 text-xs text-ink-muted">
-            Cập nhật lần cuối bởi {{ lead.handledBy }} · {{ lead.handledAt | date: 'dd/MM/yyyy HH:mm' }}
-          </p>
         </div>
-      </div>
 
-      <tf-empty-state *ngIf="!leads.length" icon="inbox" title="Chưa có yêu cầu tư vấn nào"
+        <div class="flex flex-col gap-4">
+          @for (lead of leads; track lead) {
+            <div tfCard tone="white" padding="lg">
+              <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span tfBadge [tone]="$any(leadTone(lead.status))" [square]="true">
+                      {{ leadLabel(lead.status) }}
+                    </span>
+                    @if (lead.interest) {
+                      <span tfBadge tone="primary-soft" [square]="true">{{ lead.interest }}</span>
+                    }
+                  </div>
+                  <h3 class="mt-3 text-lg font-bold tracking-heading">{{ lead.fullName }}</h3>
+                  <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-muted">
+                    <a [href]="'mailto:' + lead.email" class="flex items-center gap-1.5 hover:text-primary">
+                      <lucide-icon name="mail" class="h-4 w-4"></lucide-icon>{{ lead.email }}
+                    </a>
+                    @if (lead.phoneNumber) {
+                      <a [href]="'tel:' + lead.phoneNumber"
+                        class="flex items-center gap-1.5 hover:text-primary">
+                        <lucide-icon name="phone" class="h-4 w-4"></lucide-icon>{{ lead.phoneNumber }}
+                      </a>
+                    }
+                    <span class="flex items-center gap-1.5">
+                      <lucide-icon name="calendar" class="h-4 w-4"></lucide-icon>
+                      {{ lead.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                  @if (!lead.enrollmentId) {
+                    <button type="button" tfButton variant="primary" size="sm" (click)="startConvertLead(lead)">
+                      Ghi danh
+                    </button>
+                  }
+                  <select tfInput [ngModel]="lead.status" (ngModelChange)="onChangeLeadStatus(lead, $event)"
+                    class="!w-auto !py-2 !pl-3 !pr-8 text-sm font-semibold"
+                    [attr.aria-label]="'Trạng thái của ' + lead.fullName">
+                    <option value="New">Mới</option>
+                    <option value="Contacted">Đã liên hệ</option>
+                    <option value="Enrolled">Đã ghi danh</option>
+                    <option value="Closed">Đã đóng</option>
+                  </select>
+                  <button type="button" (click)="onDeleteLead(lead)" tfButton variant="ghost" size="icon"
+                    class="!text-danger hover:!bg-danger-soft" [attr.aria-label]="'Xoá yêu cầu của ' + lead.fullName">
+                    <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+                  </button>
+                </div>
+              </div>
+              @if (convertingLeadId === lead.id) {
+                <div class="mt-5 flex flex-wrap items-end gap-3 rounded-md bg-primary-soft p-4">
+                  <tf-field label="Chọn lớp" class="min-w-72 flex-1">
+                    <select tfInput [(ngModel)]="selectedLeadClassId" class="!bg-white">
+                      <option [ngValue]="null">Chọn lớp để ghi danh</option>
+                      @for (item of managedClasses; track item) {
+                        <option [ngValue]="item.id">{{ item.course }} — {{ item.name }}</option>
+                      }
+                    </select>
+                  </tf-field>
+                  <button type="button" tfButton variant="primary" [disabled]="!selectedLeadClassId" (click)="convertLead(lead)">Xác nhận ghi danh</button>
+                  <button type="button" tfButton variant="ghost" (click)="convertingLeadId = null">Huỷ</button>
+                </div>
+              }
+              <p class="mt-5 whitespace-pre-line rounded-md bg-muted p-5 text-ink-soft">{{ lead.message }}</p>
+              <!-- Follow-up note: internal, never shown to the enquirer. -->
+              <div class="mt-5 border-t-2 border-muted pt-5">
+                @if (editingNoteId !== lead.id) {
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="flex items-start gap-2 text-sm" [ngClass]="lead.note ? 'text-ink-soft' : 'text-ink-muted'">
+                      <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0"></lucide-icon>
+                      {{ lead.note || 'Chưa có ghi chú nội bộ.' }}
+                    </p>
+                    <button type="button" tfButton variant="outline" size="sm" (click)="startNote(lead)">
+                      <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+                      {{ lead.note ? 'Sửa ghi chú' : 'Thêm ghi chú' }}
+                    </button>
+                  </div>
+                }
+                @if (editingNoteId === lead.id) {
+                  <div class="flex flex-col gap-3">
+                    <textarea tfInput rows="3" [(ngModel)]="noteDraft"
+                      placeholder="Đã gọi 19/08, hẹn tư vấn lại thứ 5..."
+                    [attr.aria-label]="'Ghi chú cho ' + lead.fullName"></textarea>
+                    <div class="flex gap-3">
+                      <button type="button" tfButton variant="primary" size="sm" (click)="saveNote(lead)">Lưu</button>
+                      <button type="button" tfButton variant="secondary" size="sm" (click)="editingNoteId = null">Huỷ</button>
+                    </div>
+                  </div>
+                }
+              </div>
+              @if (lead.handledBy) {
+                <p class="mt-4 text-xs text-ink-muted">
+                  Cập nhật lần cuối bởi {{ lead.handledBy }} · {{ lead.handledAt | date: 'dd/MM/yyyy HH:mm' }}
+                </p>
+              }
+            </div>
+          }
+        </div>
+
+        @if (!leads.length) {
+          <tf-empty-state icon="inbox" title="Chưa có yêu cầu tư vấn nào"
                       [description]="leadStatus || leadSearch
                         ? 'Không có yêu cầu nào khớp bộ lọc hiện tại.'
                         : 'Yêu cầu gửi từ form liên hệ ở trang chủ sẽ xuất hiện tại đây.'"></tf-empty-state>
-    </tf-tab>
+        }
+      </tf-tab>
 
-    <!-- ── BLOG ─────────────────────────────────────────────────────────── -->
-    <tf-tab label="Blog" icon="newspaper">
-      <div class="grid gap-6 xl:grid-cols-[1fr_22rem]">
-        <!-- Post list -->
-        <div class="flex flex-col gap-4">
-          <div *ngFor="let post of blogPosts" tfCard tone="white" padding="md"
-               class="flex flex-wrap items-center justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <span tfBadge [tone]="post.isPublished ? 'success' : 'muted'" [square]="true">
-                  {{ post.isPublished ? 'Đã đăng' : 'Bản nháp' }}
-                </span>
-                <span *ngFor="let tag of getTags(post.tags)" tfBadge tone="primary-soft" [square]="true">{{ tag }}</span>
+      <!-- ── BLOG ─────────────────────────────────────────────────────────── -->
+      <tf-tab label="Blog" icon="newspaper">
+        <div class="grid gap-6 xl:grid-cols-[1fr_22rem]">
+          <!-- Post list -->
+          <div class="flex flex-col gap-4">
+            @for (post of blogPosts; track post) {
+              <div tfCard tone="white" padding="md"
+                class="flex flex-wrap items-center justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span tfBadge [tone]="post.isPublished ? 'success' : 'muted'" [square]="true">
+                      {{ post.isPublished ? 'Đã đăng' : 'Bản nháp' }}
+                    </span>
+                    @for (tag of getTags(post.tags); track tag) {
+                      <span tfBadge tone="primary-soft" [square]="true">{{ tag }}</span>
+                    }
+                  </div>
+                  <h3 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h3>
+                  <p class="mt-1 truncate text-sm text-ink-muted">
+                    /{{ post.slug }} · {{ post.author }}
+                    @if (post.updatedAt) {
+                      <span> · sửa {{ post.updatedAt | date: 'dd/MM/yy HH:mm' }}</span>
+                    }
+                  </p>
+                </div>
+                <div class="flex shrink-0 gap-2">
+                  <button type="button" (click)="startEditBlog(post)" tfButton variant="outline" size="sm">
+                    <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+                    Sửa
+                  </button>
+                  <button type="button" (click)="onTogglePublish(post)" tfButton variant="secondary" size="sm">
+                    <lucide-icon [name]="post.isPublished ? 'eye-off' : 'upload'" class="h-4 w-4"></lucide-icon>
+                    {{ post.isPublished ? 'Ẩn' : 'Đăng' }}
+                  </button>
+                  <button type="button" (click)="onDeleteBlog(post.id)" tfButton variant="ghost" size="icon"
+                    class="!text-danger hover:!bg-danger-soft" aria-label="Xoá bài viết">
+                    <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+                  </button>
+                </div>
               </div>
-              <h3 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ post.title }}</h3>
-              <p class="mt-1 truncate text-sm text-ink-muted">
-                /{{ post.slug }} · {{ post.author }}
-                <span *ngIf="post.updatedAt"> · sửa {{ post.updatedAt | date: 'dd/MM/yy HH:mm' }}</span>
-              </p>
-            </div>
+            }
 
-            <div class="flex shrink-0 gap-2">
-              <button type="button" (click)="startEditBlog(post)" tfButton variant="outline" size="sm">
-                <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
-                Sửa
-              </button>
-              <button type="button" (click)="onTogglePublish(post)" tfButton variant="secondary" size="sm">
-                <lucide-icon [name]="post.isPublished ? 'eye-off' : 'upload'" class="h-4 w-4"></lucide-icon>
-                {{ post.isPublished ? 'Ẩn' : 'Đăng' }}
-              </button>
-              <button type="button" (click)="onDeleteBlog(post.id)" tfButton variant="ghost" size="icon"
-                      class="!text-danger hover:!bg-danger-soft" aria-label="Xoá bài viết">
-                <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
-              </button>
-            </div>
+            @if (!blogPosts.length) {
+              <tf-empty-state icon="newspaper" title="Chưa có bài viết nào"
+              description="Tạo bài viết đầu tiên bằng form bên cạnh."></tf-empty-state>
+            }
           </div>
 
-          <tf-empty-state *ngIf="!blogPosts.length" icon="newspaper" title="Chưa có bài viết nào"
-                          description="Tạo bài viết đầu tiên bằng form bên cạnh."></tf-empty-state>
+          <!-- Create form -->
+          <div tfCard [tone]="editingBlogId ? 'primary-soft' : 'muted'" padding="lg" class="h-fit">
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="text-lg font-extrabold tracking-heading">
+                {{ editingBlogId ? 'Sửa bài viết' : 'Viết bài mới' }}
+              </h3>
+              @if (editingBlogId) {
+                <button type="button" (click)="cancelEditBlog()"
+                  tfButton variant="ghost" size="icon" aria-label="Huỷ sửa, quay lại viết bài mới">
+                  <lucide-icon name="x" class="h-5 w-5"></lucide-icon>
+                </button>
+              }
+            </div>
+
+            @if (blogLoading) {
+              <tf-spinner size="sm" label="Đang tải nội dung..." class="mt-5 block"></tf-spinner>
+            }
+
+            <form [formGroup]="blogForm" (ngSubmit)="onSaveBlog()" class="mt-5 flex flex-col gap-4"
+              [class.hidden]="blogLoading">
+              <tf-field label="Tiêu đề" [required]="true" for="b-title">
+                <!-- Auto-slug only while creating: regenerating the slug of a
+                published post would break every link already pointing at it. -->
+                <input id="b-title" tfInput formControlName="title"
+                  (blur)="editingBlogId ? null : autoSlug()" class="!bg-white" />
+                </tf-field>
+
+                <tf-field label="Slug" [required]="true" for="b-slug" hint="Tự sinh từ tiêu đề">
+                  <input id="b-slug" tfInput formControlName="slug" class="!bg-white" />
+                </tf-field>
+
+                <tf-field label="Tóm tắt" for="b-summary">
+                  <textarea id="b-summary" tfInput formControlName="summary" rows="2" class="!bg-white"></textarea>
+                </tf-field>
+
+                <tf-field label="Nội dung (HTML)" [required]="true" for="b-content">
+                  <textarea id="b-content" tfInput formControlName="content" rows="6" class="!bg-white"
+                    placeholder="<p>Nội dung bài viết...</p>"></textarea>
+                  </tf-field>
+
+                  <tf-field label="Tags" for="b-tags" hint="Ngăn cách bằng dấu phẩy">
+                    <input id="b-tags" tfInput formControlName="tags" placeholder="Du học, Tiếng Pháp" class="!bg-white" />
+                  </tf-field>
+
+                  <tf-field label="Ảnh bìa (URL)" for="b-cover">
+                    <input id="b-cover" tfInput formControlName="coverImageUrl" placeholder="https://..." class="!bg-white" />
+                  </tf-field>
+
+                  <label class="flex cursor-pointer items-center gap-3 rounded-md bg-white p-4">
+                    <input type="checkbox" formControlName="isPublished"
+                      class="h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-line text-primary focus:ring-primary" />
+                      <span class="font-semibold text-ink-soft">{{ editingBlogId ? 'Hiển thị công khai' : 'Đăng ngay' }}</span>
+                    </label>
+
+                    <button type="submit" tfButton variant="primary" size="md" [block]="true"
+                      [disabled]="blogForm.invalid || blogSaving">
+                      {{ blogSaving ? 'Đang lưu...' : editingBlogId ? 'Lưu thay đổi' : 'Tạo bài viết' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </tf-tab>
+
+            <!-- ── AUDIT LOG ───────────────────────────────────────────────────── -->
+            <tf-tab label="Nhật ký bảo mật" icon="shield-check">
+              <div class="mb-6 flex flex-wrap items-end gap-3">
+                <tf-field label="Lọc theo hành động" class="min-w-72 flex-1">
+                  <select tfInput [(ngModel)]="auditAction" (ngModelChange)="loadAuditLog()" class="!bg-white">
+                    <option value="">Tất cả hành động</option>
+                    <option value="UserRoleChanged">Đổi quyền người dùng</option>
+                    <option value="UserActivated">Kích hoạt tài khoản</option>
+                    <option value="UserDeactivated">Vô hiệu hoá tài khoản</option>
+                    <option value="EnrollmentStatusChanged">Đổi trạng thái ghi danh</option>
+                    <option value="LeadConvertedToEnrollment">Chuyển lead thành học viên</option>
+                    <option value="QuizPublished">Publish bài test</option>
+                    <option value="QuizEssayGraded">Chấm tự luận</option>
+                    <option value="PasswordChanged">Đổi mật khẩu</option>
+                  </select>
+                </tf-field>
+                <button type="button" tfButton variant="outline" (click)="loadAuditLog()">Làm mới</button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[52rem] border-collapse">
+                  <thead><tr class="bg-ink text-left text-xs uppercase tracking-wider text-white">
+                    <th class="rounded-l-md px-4 py-3">Thời gian</th>
+                    <th class="px-4 py-3">Người thực hiện</th>
+                    <th class="px-4 py-3">Hành động</th>
+                    <th class="px-4 py-3">Đối tượng</th>
+                    <th class="rounded-r-md px-4 py-3">Chi tiết</th>
+                  </tr></thead>
+                  <tbody>
+                    @for (entry of auditLogs; track entry) {
+                      <tr class="border-b-2 border-muted align-top">
+                        <td class="whitespace-nowrap px-4 py-3 text-sm">{{ entry.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                        <td class="px-4 py-3"><strong>{{ entry.actor || 'Hệ thống' }}</strong><br><span class="text-xs text-ink-muted">{{ entry.ipAddress || '—' }}</span></td>
+                        <td class="px-4 py-3"><span tfBadge tone="primary-soft" [square]="true">{{ entry.action }}</span></td>
+                        <td class="px-4 py-3 text-sm">{{ entry.entityType }} #{{ entry.entityId || '—' }}</td>
+                        <td class="max-w-md break-all px-4 py-3 font-mono text-xs text-ink-muted">{{ entry.metadataJson || '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (!auditLogs.length) {
+                <tf-empty-state icon="shield-check" title="Chưa có sự kiện audit"
+                description="Các hành động nhạy cảm sẽ được ghi lại tại đây."></tf-empty-state>
+              }
+            </tf-tab>
+          </tf-tabs>
         </div>
-
-        <!-- Create form -->
-        <div tfCard [tone]="editingBlogId ? 'primary-soft' : 'muted'" padding="lg" class="h-fit">
-          <div class="flex items-start justify-between gap-3">
-            <h3 class="text-lg font-extrabold tracking-heading">
-              {{ editingBlogId ? 'Sửa bài viết' : 'Viết bài mới' }}
-            </h3>
-            <button *ngIf="editingBlogId" type="button" (click)="cancelEditBlog()"
-                    tfButton variant="ghost" size="icon" aria-label="Huỷ sửa, quay lại viết bài mới">
-              <lucide-icon name="x" class="h-5 w-5"></lucide-icon>
-            </button>
-          </div>
-
-          <tf-spinner *ngIf="blogLoading" size="sm" label="Đang tải nội dung..." class="mt-5 block"></tf-spinner>
-
-          <form [formGroup]="blogForm" (ngSubmit)="onSaveBlog()" class="mt-5 flex flex-col gap-4"
-                [class.hidden]="blogLoading">
-            <tf-field label="Tiêu đề" [required]="true" for="b-title">
-              <!-- Auto-slug only while creating: regenerating the slug of a
-                   published post would break every link already pointing at it. -->
-              <input id="b-title" tfInput formControlName="title"
-                     (blur)="editingBlogId ? null : autoSlug()" class="!bg-white" />
-            </tf-field>
-
-            <tf-field label="Slug" [required]="true" for="b-slug" hint="Tự sinh từ tiêu đề">
-              <input id="b-slug" tfInput formControlName="slug" class="!bg-white" />
-            </tf-field>
-
-            <tf-field label="Tóm tắt" for="b-summary">
-              <textarea id="b-summary" tfInput formControlName="summary" rows="2" class="!bg-white"></textarea>
-            </tf-field>
-
-            <tf-field label="Nội dung (HTML)" [required]="true" for="b-content">
-              <textarea id="b-content" tfInput formControlName="content" rows="6" class="!bg-white"
-                        placeholder="<p>Nội dung bài viết...</p>"></textarea>
-            </tf-field>
-
-            <tf-field label="Tags" for="b-tags" hint="Ngăn cách bằng dấu phẩy">
-              <input id="b-tags" tfInput formControlName="tags" placeholder="Du học, Tiếng Pháp" class="!bg-white" />
-            </tf-field>
-
-            <tf-field label="Ảnh bìa (URL)" for="b-cover">
-              <input id="b-cover" tfInput formControlName="coverImageUrl" placeholder="https://..." class="!bg-white" />
-            </tf-field>
-
-            <label class="flex cursor-pointer items-center gap-3 rounded-md bg-white p-4">
-              <input type="checkbox" formControlName="isPublished"
-                     class="h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-line text-primary focus:ring-primary" />
-              <span class="font-semibold text-ink-soft">{{ editingBlogId ? 'Hiển thị công khai' : 'Đăng ngay' }}</span>
-            </label>
-
-            <button type="submit" tfButton variant="primary" size="md" [block]="true"
-                    [disabled]="blogForm.invalid || blogSaving">
-              {{ blogSaving ? 'Đang lưu...' : editingBlogId ? 'Lưu thay đổi' : 'Tạo bài viết' }}
-            </button>
-          </form>
-        </div>
-      </div>
-    </tf-tab>
-  </tf-tabs>
-</div>

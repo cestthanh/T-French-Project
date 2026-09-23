@@ -11,8 +11,9 @@ import { ToastService } from 'src/app/services/share/toastService';
 type SubmitMode = 'upload' | 'link';
 
 @Component({
-  selector: 'app-assignment-detail',
-  templateUrl: './assignmentDetail.html',
+    selector: 'app-assignment-detail',
+    templateUrl: './assignmentDetail.html',
+    standalone: false
 })
 export class AssignmentDetail implements OnInit {
   assignment: any = null;

@@ -15,7 +15,9 @@
     </p>
 
     <div class="mt-8 flex flex-wrap justify-center gap-2">
-      <span *ngFor="let level of levels" tfBadge tone="dark">{{ level }}</span>
+      @for (level of levels; track level) {
+        <span tfBadge tone="dark">{{ level }}</span>
+      }
     </div>
   </div>
 </section>
@@ -37,87 +39,99 @@
           placeholder="Tìm khoá học..."
           aria-label="Tìm khoá học"
           class="!bg-white !pl-12"
-        />
+          />
       </div>
-      <span *ngIf="!loading" class="text-sm font-semibold uppercase tracking-wider text-ink-muted">
-        {{ filtered.length }} khoá học
-      </span>
+      @if (!loading) {
+        <span class="text-sm font-semibold uppercase tracking-wider text-ink-muted">
+          {{ filtered.length }} khoá học
+        </span>
+      }
     </div>
 
     <!-- Skeleton -->
-    <div *ngIf="loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      <div *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="overflow-hidden rounded-lg bg-white">
-        <div class="h-44 animate-pulse bg-line"></div>
-        <div class="space-y-3 p-6">
-          <div class="h-5 w-3/4 animate-pulse rounded bg-line"></div>
-          <div class="h-4 w-full animate-pulse rounded bg-muted"></div>
-          <div class="h-4 w-1/2 animate-pulse rounded bg-muted"></div>
-        </div>
+    @if (loading) {
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="overflow-hidden rounded-lg bg-white">
+            <div class="h-44 animate-pulse bg-line"></div>
+            <div class="space-y-3 p-6">
+              <div class="h-5 w-3/4 animate-pulse rounded bg-line"></div>
+              <div class="h-4 w-full animate-pulse rounded bg-muted"></div>
+              <div class="h-4 w-1/2 animate-pulse rounded bg-muted"></div>
+            </div>
+          </div>
+        }
       </div>
-    </div>
+    }
 
     <!-- Cards -->
-    <div *ngIf="!loading && filtered.length" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      <a
-        *ngFor="let course of filtered"
-        [routerLink]="['/courses', course.id]"
-        tfCard tone="white" padding="none" [interactive]="true"
-        class="overflow-hidden no-underline"
-      >
-        <!-- Thumbnail: a solid colour block when there is no image -->
-        <div
-          class="relative flex h-44 items-center justify-center bg-primary bg-cover bg-center"
-          [style.background-image]="course.imageUrl ? 'url(' + course.imageUrl + ')' : null"
-        >
-          <div *ngIf="!course.imageUrl" class="flex flex-col items-center gap-3">
-            <tf-logo variant="mark" tone="white" sizeClass="h-14" [decorative]="true"></tf-logo>
-            <span class="text-2xl font-extrabold tracking-heading text-white">
-              {{ course.level || 'FR' }}
-            </span>
-          </div>
-
-          <span *ngIf="course.level" tfBadge tone="dark" [square]="true" class="absolute left-4 top-4">
-            {{ course.level }}
-          </span>
-          <span *ngIf="course.price === 0" tfBadge tone="success" [square]="true" class="absolute right-4 top-4">
-            Miễn phí
-          </span>
-        </div>
-
-        <div class="p-6">
-          <h3 class="text-xl font-bold leading-snug tracking-heading text-ink">{{ course.title }}</h3>
-          <p class="mt-2 line-clamp-2 text-ink-muted">{{ course.description }}</p>
-
-          <div class="mt-5 flex flex-wrap gap-4 text-sm text-ink-muted">
-            <span class="flex items-center gap-1.5">
-              <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ course.teacher }}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <lucide-icon name="users" class="h-4 w-4"></lucide-icon>{{ course.enrollmentCount }} học viên
-            </span>
-          </div>
-
-          <div class="mt-6 flex items-center justify-between border-t-2 border-muted pt-5">
-            <span class="text-xl font-extrabold tracking-heading"
+    @if (!loading && filtered.length) {
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        @for (course of filtered; track course) {
+          <a
+            [routerLink]="['/courses', course.id]"
+            tfCard tone="white" padding="none" [interactive]="true"
+            class="overflow-hidden no-underline"
+            >
+            <!-- Thumbnail: a solid colour block when there is no image -->
+            <div
+              class="relative flex h-44 items-center justify-center bg-primary bg-cover bg-center"
+              [style.background-image]="course.imageUrl ? 'url(' + course.imageUrl + ')' : null"
+              >
+              @if (!course.imageUrl) {
+                <div class="flex flex-col items-center gap-3">
+                  <tf-logo variant="mark" tone="white" sizeClass="h-14" [decorative]="true"></tf-logo>
+                  <span class="text-2xl font-extrabold tracking-heading text-white">
+                    {{ course.level || 'FR' }}
+                  </span>
+                </div>
+              }
+              @if (course.level) {
+                <span tfBadge tone="dark" [square]="true" class="absolute left-4 top-4">
+                  {{ course.level }}
+                </span>
+              }
+              @if (course.price === 0) {
+                <span tfBadge tone="success" [square]="true" class="absolute right-4 top-4">
+                  Miễn phí
+                </span>
+              }
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-bold leading-snug tracking-heading text-ink">{{ course.title }}</h3>
+              <p class="mt-2 line-clamp-2 text-ink-muted">{{ course.description }}</p>
+              <div class="mt-5 flex flex-wrap gap-4 text-sm text-ink-muted">
+                <span class="flex items-center gap-1.5">
+                  <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ course.teacher }}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <lucide-icon name="users" class="h-4 w-4"></lucide-icon>{{ course.enrollmentCount }} học viên
+                </span>
+              </div>
+              <div class="mt-6 flex items-center justify-between border-t-2 border-muted pt-5">
+                <span class="text-xl font-extrabold tracking-heading"
                   [ngClass]="course.price > 0 ? 'text-primary' : 'text-success'">
-              {{ course.price > 0 ? (course.price | number: '1.0-0') + 'đ' : 'Miễn phí' }}
-            </span>
-            <span class="flex items-center gap-1.5 text-sm font-semibold text-primary">
-              Xem chi tiết
-              <lucide-icon name="arrow-right" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"></lucide-icon>
-            </span>
-          </div>
-        </div>
-      </a>
-    </div>
+                  {{ course.price > 0 ? (course.price | number: '1.0-0') + 'đ' : 'Miễn phí' }}
+                </span>
+                <span class="flex items-center gap-1.5 text-sm font-semibold text-primary">
+                  Xem chi tiết
+                  <lucide-icon name="arrow-right" class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"></lucide-icon>
+                </span>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    }
 
     <!-- Empty -->
-    <tf-empty-state
-      *ngIf="!loading && !filtered.length"
-      icon="search"
-      title="Không tìm thấy khoá học"
-      description="Thử thay đổi từ khoá tìm kiếm của bạn."
-    ></tf-empty-state>
+    @if (!loading && !filtered.length) {
+      <tf-empty-state
+        icon="search"
+        title="Không tìm thấy khoá học"
+        description="Thử thay đổi từ khoá tìm kiếm của bạn."
+      ></tf-empty-state>
+    }
   </div>
 </section>
 

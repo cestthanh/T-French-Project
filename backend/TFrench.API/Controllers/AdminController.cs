@@ -1,16 +1,20 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TFrench.API.Data;
 using TFrench.API.Models;
+using TFrench.API.Services;
 
 namespace TFrench.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class AdminController(AppDbContext db) : ControllerBase
+public class AdminController(AppDbContext db, AuditService audit) : ControllerBase
 {
+    private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
     // ── PLATFORM STATS ────────────────────────────────────────────────────────
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
@@ -43,7 +47,7 @@ public class AdminController(AppDbContext db) : ControllerBase
             u.FullName.Contains(search) || u.Email.Contains(search));
 
         var users = await query.OrderBy(u => u.FullName)
-            .Select(u => new { u.Id, u.FullName, u.Email, Role = u.Role.ToString(), u.PhoneNumber, u.AvatarUrl, u.CreatedAt })
+            .Select(u => new { u.Id, u.FullName, u.Email, Role = u.Role.ToString(), u.PhoneNumber, u.AvatarUrl, u.IsActive, u.CreatedAt })
             .ToListAsync();
         return Ok(users);
     }
@@ -51,12 +55,23 @@ public class AdminController(AppDbContext db) : ControllerBase
     [HttpPut("users/{id}/role")]
     public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleDto dto)
     {
-        if (!Enum.TryParse<UserRole>(dto.Role, out var parsedRole))
+        if (!Enum.TryParse<UserRole>(dto.Role, ignoreCase: true, out var parsedRole))
             return BadRequest(new { message = "Role không hợp lệ." });
 
         var user = await db.Users.FindAsync(id);
         if (user == null) return NotFound();
+
+        if (id == CurrentUserId && parsedRole != UserRole.Admin)
+            return BadRequest(new { message = "Bạn không thể tự hạ quyền tài khoản đang đăng nhập." });
+
+        if (user.Role == UserRole.Admin && parsedRole != UserRole.Admin &&
+            await db.Users.CountAsync(u => u.Role == UserRole.Admin && u.IsActive) <= 1)
+            return Conflict(new { message = "Không thể hạ quyền quản trị viên đang hoạt động cuối cùng." });
+
+        var previousRole = user.Role;
         user.Role = parsedRole;
+        audit.Record("UserRoleChanged", "User", user.Id,
+            new { From = previousRole.ToString(), To = parsedRole.ToString() });
         await db.SaveChangesAsync();
         return Ok(new { user.Id, user.FullName, user.Role });
     }
@@ -66,9 +81,47 @@ public class AdminController(AppDbContext db) : ControllerBase
     {
         var user = await db.Users.FindAsync(id);
         if (user == null) return NotFound();
+        if (id == CurrentUserId)
+            return BadRequest(new { message = "Bạn không thể tự xoá tài khoản đang đăng nhập." });
+        if (user.Role == UserRole.Admin &&
+            await db.Users.CountAsync(u => u.Role == UserRole.Admin && u.IsActive) <= 1)
+            return Conflict(new { message = "Không thể xoá quản trị viên đang hoạt động cuối cùng." });
+
+        audit.Record("UserDeleted", "User", user.Id, new { user.Email, Role = user.Role.ToString() });
         db.Users.Remove(user);
         await db.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpPatch("users/{id}/active")]
+    public async Task<IActionResult> SetUserActive(int id, [FromBody] SetUserActiveDto dto)
+    {
+        var user = await db.Users.FindAsync(id);
+        if (user == null) return NotFound();
+        if (id == CurrentUserId && !dto.IsActive)
+            return BadRequest(new { message = "Bạn không thể tự vô hiệu hoá tài khoản đang đăng nhập." });
+        if (user.Role == UserRole.Admin && user.IsActive && !dto.IsActive &&
+            await db.Users.CountAsync(u => u.Role == UserRole.Admin && u.IsActive) <= 1)
+            return Conflict(new { message = "Không thể vô hiệu hoá quản trị viên cuối cùng." });
+
+        user.IsActive = dto.IsActive;
+        audit.Record(dto.IsActive ? "UserActivated" : "UserDeactivated", "User", user.Id, new { user.Email });
+        await db.SaveChangesAsync();
+        return Ok(new { user.Id, user.IsActive });
+    }
+
+    [HttpGet("audit")]
+    public async Task<IActionResult> GetAuditLog([FromQuery] string? action, [FromQuery] int take = 100)
+    {
+        take = Math.Clamp(take, 1, 500);
+        var query = db.AuditLogs.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(action)) query = query.Where(a => a.Action == action);
+        var rows = await query.OrderByDescending(a => a.CreatedAt).Take(take).Select(a => new
+        {
+            a.Id, a.Action, a.EntityType, a.EntityId, a.MetadataJson, a.IpAddress, a.CreatedAt,
+            Actor = a.ActorUser == null ? null : a.ActorUser.FullName,
+        }).ToListAsync();
+        return Ok(rows);
     }
 
     // ── BLOG MANAGEMENT ───────────────────────────────────────────────────────
@@ -191,4 +244,5 @@ public class AdminController(AppDbContext db) : ControllerBase
 
 // DTOs local to Admin scope
 public record ChangeRoleDto(string Role);
+public record SetUserActiveDto(bool IsActive);
 public record CreateAdminBlogDto(string Title, string Slug, string? Summary, string Content, string? Tags, string? CoverImageUrl, bool IsPublished = false);

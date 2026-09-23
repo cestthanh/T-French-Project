@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AdminBlogPost, AdminBlogPostDetail, AdminStats, AdminUser, CreateBlogPostRequest } from 'src/app/interface';
+import { AdminBlogPost, AdminBlogPostDetail, AdminStats, AdminUser, AuditLogEntry, CreateBlogPostRequest } from 'src/app/interface';
 import { uriAdmin } from './Uri/RequestUri/uriAdmin';
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +21,10 @@ export class AdminService {
 
   changeRole(userId: number, role: string): Observable<any> {
     return this.http.put(uriAdmin.CHANGE_ROLE(userId), { role });
+  }
+
+  setUserActive(userId: number, isActive: boolean): Observable<{ id: number; isActive: boolean }> {
+    return this.http.patch<{ id: number; isActive: boolean }>(uriAdmin.SET_ACTIVE(userId), { isActive });
   }
 
   deleteUser(userId: number): Observable<void> {
@@ -50,5 +54,11 @@ export class AdminService {
 
   deleteBlogPost(id: number): Observable<void> {
     return this.http.delete<void>(uriAdmin.DELETE_BLOG(id));
+  }
+
+  getAuditLog(action?: string): Observable<AuditLogEntry[]> {
+    return this.http.get<AuditLogEntry[]>(uriAdmin.AUDIT, {
+      params: action ? { action } : {},
+    });
   }
 }

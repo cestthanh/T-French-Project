@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TFrench.API.Data;
@@ -28,6 +29,7 @@ public class FilesController(AppDbContext db, FileStorageService storage) : Cont
     // Any signed-in user may upload: students need it to hand in work. What the
     // file may then be attached to is enforced by the owning controller.
     [HttpPost]
+    [EnableRateLimiting("uploads")]
     [RequestSizeLimit(30 * 1024 * 1024)] // a little above the 25 MB rule, so an
                                          // oversized file gets our message and
                                          // not Kestrel's bare 413
@@ -136,7 +138,7 @@ public class FilesController(AppDbContext db, FileStorageService storage) : Cont
             return await db.Courses.AnyAsync(c => c.Id == courseId && c.TeacherId == CurrentUserId);
 
         return await db.Enrollments.AnyAsync(e =>
-            e.CourseId == courseId && e.StudentId == CurrentUserId && e.IsActive);
+            e.CourseId == courseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
     }
 
     private object Describe(StoredFile f) => new

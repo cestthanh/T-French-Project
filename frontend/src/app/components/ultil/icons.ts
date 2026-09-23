@@ -5,9 +5,9 @@ import {
   Clock, ExternalLink, Eye, EyeOff, FileDown, FileText, Flag, Folder, FolderOpen,
   Globe, GraduationCap, House, Image, Inbox, Languages, LayoutDashboard, Link,
   LoaderCircle, Lock, LogOut, Mail, MapPin, Menu, MessageCircle, MessageSquare,
-  Newspaper, Pencil, Phone, Play, Plus, Quote, Search, Send, Settings, ShieldCheck,
+  Newspaper, Pencil, Phone, Play, Plus, Quote, School, Search, Send, Settings, ShieldCheck,
   Sparkles, SquarePen, Star, Target, TrendingUp, TriangleAlert, Trash2, Upload,
-  User, UserCog, Users, Video, X, Zap,
+  User, UserCheck, UserCog, Users, UserX, Video, X, Zap,
 } from 'lucide-angular';
 
 /**
@@ -24,7 +24,7 @@ export const TF_ICONS = {
   Clock, ExternalLink, Eye, EyeOff, FileDown, FileText, Flag, Folder, FolderOpen,
   Globe, GraduationCap, House, Image, Inbox, Languages, LayoutDashboard, Link,
   LoaderCircle, Lock, LogOut, Mail, MapPin, Menu, MessageCircle, MessageSquare,
-  Newspaper, Pencil, Phone, Play, Plus, Quote, Search, Send, Settings, ShieldCheck,
+  Newspaper, Pencil, Phone, Play, Plus, Quote, School, Search, Send, Settings, ShieldCheck,
   Sparkles, SquarePen, Star, Target, TrendingUp, TriangleAlert, Trash2, Upload,
-  User, UserCog, Users, Video, X, Zap,
+  User, UserCheck, UserCog, Users, UserX, Video, X, Zap,
 };

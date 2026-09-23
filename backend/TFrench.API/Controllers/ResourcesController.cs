@@ -29,7 +29,7 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
         if (CurrentRole == "Student")
         {
             var enrolledIds = await db.Enrollments
-                .Where(e => e.StudentId == CurrentUserId && e.IsActive)
+                .Where(e => e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active)
                 .Select(e => e.CourseId).ToListAsync();
 
             query = query.Where(r => r.IsPublic || (r.CourseId != null && enrolledIds.Contains(r.CourseId.Value)));
@@ -72,11 +72,19 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
     [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> Create([FromBody] CreateResourceDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
+            return BadRequest(new { message = "Tiêu đề tài liệu phải có từ 1 đến 200 ký tự." });
         if (dto.FileId == null && string.IsNullOrWhiteSpace(dto.FileUrl))
             return BadRequest(new { message = "Cần tải lên một file hoặc dán link tài liệu." });
+        if (dto.FileId != null && !string.IsNullOrWhiteSpace(dto.FileUrl))
+            return BadRequest(new { message = "Chỉ được chọn một file hoặc một link tài liệu." });
+        if (!string.IsNullOrWhiteSpace(dto.FileUrl) && !IsHttpUrl(dto.FileUrl))
+            return BadRequest(new { message = "Link tài liệu phải là URL http/https hợp lệ." });
 
         if (!await OwnsFileAsync(dto.FileId))
             return BadRequest(new { message = "File tải lên không hợp lệ." });
+        if (!await CanAttachToCourseAsync(dto.CourseId))
+            return BadRequest(new { message = "Khoá học không tồn tại hoặc không thuộc giáo viên hiện tại." });
 
         var resource = new Resource
         {
@@ -103,9 +111,18 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
         var r = await db.Resources.Include(x => x.File).FirstOrDefaultAsync(x => x.Id == id);
         if (r == null) return NotFound();
         if (CurrentRole == "Teacher" && r.UploadedById != CurrentUserId) return Forbid();
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
+            return BadRequest(new { message = "Tiêu đề tài liệu phải có từ 1 đến 200 ký tự." });
+        if (dto.FileId != null && !string.IsNullOrWhiteSpace(dto.FileUrl))
+            return BadRequest(new { message = "Chỉ được chọn một file hoặc một link tài liệu." });
+        if (!string.IsNullOrWhiteSpace(dto.FileUrl) && !IsHttpUrl(dto.FileUrl))
+            return BadRequest(new { message = "Link tài liệu phải là URL http/https hợp lệ." });
+        if (!await CanAttachToCourseAsync(dto.CourseId))
+            return BadRequest(new { message = "Khoá học không tồn tại hoặc không thuộc giáo viên hiện tại." });
 
         r.Title = dto.Title; r.Description = dto.Description;
         r.Category = dto.Category; r.IsPublic = dto.IsPublic;
+        r.FileType = dto.FileType; r.CourseId = dto.CourseId;
 
         // Swapping the attachment: only when a new file is supplied, so an edit
         // that just fixes a typo in the title cannot drop the file by omission.
@@ -161,6 +178,13 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
             f.Id == fileId && (CurrentRole == "Admin" || f.UploadedById == CurrentUserId));
     }
 
+    private async Task<bool> CanAttachToCourseAsync(int? courseId)
+    {
+        if (courseId == null) return true;
+        return await db.Courses.AnyAsync(c =>
+            c.Id == courseId && (CurrentRole == "Admin" || c.TeacherId == CurrentUserId));
+    }
+
     private async Task DeleteFileAsync(StoredFile? file)
     {
         if (file == null) return;
@@ -168,6 +192,10 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
         db.StoredFiles.Remove(file);
         await db.SaveChangesAsync();
     }
+
+    private static bool IsHttpUrl(string value) =>
+        Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 }
 
 // DTO — FileUrl and FileId are alternatives: an uploaded copy, or a link out.

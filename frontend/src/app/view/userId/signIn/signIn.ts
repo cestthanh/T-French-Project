@@ -2,16 +2,19 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/authService';
+import { environment } from 'src/environments/environment';
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './signIn.html',
+    selector: 'app-login',
+    templateUrl: './signIn.html',
+    standalone: false
 })
 export class SignIn {
   form: FormGroup;
   loading = false;
   error = '';
   showPass = false;
+  readonly showDemoAccounts = !environment.production;
 
   readonly perks = [
     { icon: 'clipboard-list', label: 'Bài tập được chấm chi tiết' },

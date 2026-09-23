@@ -7,8 +7,9 @@ import { Component, Input } from '@angular/core';
  * rather than a dashed outline or a faded illustration.
  */
 @Component({
-  selector: 'tf-empty-state',
-  templateUrl: './emptyState.html',
+    selector: 'tf-empty-state',
+    templateUrl: './emptyState.html',
+    standalone: false
 })
 export class BaseEmptyState {
   @Input() icon = 'inbox';

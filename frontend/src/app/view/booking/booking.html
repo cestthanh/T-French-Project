@@ -1,123 +1,143 @@
 <tf-page-header
   title="Đặt lịch luyện nói"
   [subtitle]="canManage ? 'Quản lý slot thời gian giảng dạy của bạn' : 'Đặt lịch luyện nói 1-1 với giáo viên'"
->
-  <button *ngIf="canManage" type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
-    <lucide-icon [name]="showCreate ? 'x' : 'plus'" class="h-4 w-4"></lucide-icon>
-    {{ showCreate ? 'Đóng' : 'Tạo slot mới' }}
-  </button>
+  >
+  @if (canCreate) {
+    <button type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
+      <lucide-icon [name]="showCreate ? 'x' : 'plus'" class="h-4 w-4"></lucide-icon>
+      {{ showCreate ? 'Đóng' : 'Tạo slot mới' }}
+    </button>
+  }
 </tf-page-header>
 
 <!-- ══ CREATE SLOT ═════════════════════════════════════════════════════════ -->
-<div *ngIf="showCreate && canManage" tfCard tone="white" padding="lg" class="mb-8 animate-fade-up">
-  <h2 class="text-xl font-extrabold tracking-heading">Tạo slot thời gian trống</h2>
+@if (showCreate && canCreate) {
+  <div tfCard tone="white" padding="lg" class="mb-8 animate-fade-up">
+    <h2 class="text-xl font-extrabold tracking-heading">Tạo slot thời gian trống</h2>
+    <form [formGroup]="createForm" (ngSubmit)="onCreate()" class="mt-6 flex flex-col gap-5">
+      <div class="grid gap-5 sm:grid-cols-3">
+        <tf-field label="Bắt đầu" [required]="true" for="s-start">
+          <input id="s-start" tfInput type="datetime-local" formControlName="startTime" />
+        </tf-field>
+        <tf-field label="Kết thúc" [required]="true" for="s-end">
+          <input id="s-end" tfInput type="datetime-local" formControlName="endTime" />
+        </tf-field>
+        <tf-field label="Mã khoá học" [required]="true" for="s-course" hint="Course ID">
+          <input id="s-course" tfInput type="number" formControlName="courseId" placeholder="1" />
+        </tf-field>
+      </div>
+      <div class="flex flex-wrap justify-end gap-3">
+        <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
+        <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">
+          {{ saving ? 'Đang lưu...' : 'Tạo slot' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
 
-  <form [formGroup]="createForm" (ngSubmit)="onCreate()" class="mt-6 flex flex-col gap-5">
-    <div class="grid gap-5 sm:grid-cols-3">
-      <tf-field label="Bắt đầu" [required]="true" for="s-start">
-        <input id="s-start" tfInput type="datetime-local" formControlName="startTime" />
-      </tf-field>
-      <tf-field label="Kết thúc" [required]="true" for="s-end">
-        <input id="s-end" tfInput type="datetime-local" formControlName="endTime" />
-      </tf-field>
-      <tf-field label="Mã khoá học" [required]="true" for="s-course" hint="Course ID">
-        <input id="s-course" tfInput type="number" formControlName="courseId" placeholder="1" />
-      </tf-field>
-    </div>
-
-    <div class="flex flex-wrap justify-end gap-3">
-      <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
-      <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">
-        {{ saving ? 'Đang lưu...' : 'Tạo slot' }}
-      </button>
-    </div>
-  </form>
-</div>
-
-<tf-spinner *ngIf="loading" size="md" label="Đang tải lịch..."></tf-spinner>
+@if (loading) {
+  <tf-spinner size="md" label="Đang tải lịch..."></tf-spinner>
+}
 
 <!-- ══ SCHEDULE ════════════════════════════════════════════════════════════ -->
-<div *ngIf="!loading">
-  <div *ngFor="let day of groupedDays" class="mb-10">
-    <!-- Day header: a solid dark bar rather than a rule -->
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-ink px-5 py-3">
-      <span class="flex items-center gap-3 font-bold tracking-heading text-white">
-        <lucide-icon name="calendar" class="h-5 w-5 text-accent" [strokeWidth]="2.5"></lucide-icon>
-        {{ day.date | date: 'EEEE, dd/MM/yyyy' }}
-      </span>
-      <span class="text-xs font-semibold uppercase tracking-wider text-white/60">
-        {{ day.slots.length }} slot
-      </span>
-    </div>
-
-    <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-      <div
-        *ngFor="let s of day.slots"
-        tfCard
-        [tone]="toneFor(s)"
-        padding="md"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <span class="flex items-center gap-2 text-lg font-extrabold tracking-heading">
-            <lucide-icon name="clock" class="h-5 w-5" [strokeWidth]="2.5"></lucide-icon>
-            {{ s.startTime | date: 'HH:mm' }} — {{ s.endTime | date: 'HH:mm' }}
+@if (!loading) {
+  <div>
+    @for (day of groupedDays; track day) {
+      <div class="mb-10">
+        <!-- Day header: a solid dark bar rather than a rule -->
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-md bg-ink px-5 py-3">
+          <span class="flex items-center gap-3 font-bold tracking-heading text-white">
+            <lucide-icon name="calendar" class="h-5 w-5 text-accent" [strokeWidth]="2.5"></lucide-icon>
+            {{ day.date | date: 'EEEE, dd/MM/yyyy' }}
           </span>
-
-          <span *ngIf="!s.isBooked" tfBadge tone="success" [square]="true">Trống</span>
-          <span *ngIf="isMySlot(s)" tfBadge tone="primary" [square]="true">Lịch của bạn</span>
-          <span *ngIf="s.isBooked && !isMySlot(s)" tfBadge tone="muted" [square]="true">Đã đặt</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-white/60">
+            {{ day.slots.length }} slot
+          </span>
         </div>
-
-        <p *ngIf="!canManage" class="mt-4 flex items-center gap-2 text-ink-muted">
-          <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ s.teacher }}
-        </p>
-        <p *ngIf="canManage && s.isBooked" class="mt-4 flex items-center gap-2 text-ink-muted">
-          <lucide-icon name="graduation-cap" class="h-4 w-4"></lucide-icon>{{ s.student }}
-        </p>
-        <p *ngIf="s.course" class="mt-2 flex items-center gap-2 text-sm text-ink-muted">
-          <lucide-icon name="book-open" class="h-4 w-4"></lucide-icon>{{ s.course }}
-        </p>
-
-        <div class="mt-5 flex flex-wrap gap-2 border-t-2 border-white/40 pt-4">
-          <!-- Student: book -->
-          <button
-            *ngIf="!canManage && !s.isBooked"
-            type="button"
-            tfButton variant="primary" size="sm"
-            [disabled]="booking === s.id"
-            (click)="onBook(s.id)"
-          >
-            <lucide-icon name="calendar-check" class="h-4 w-4"></lucide-icon>
-            {{ booking === s.id ? 'Đang đặt...' : 'Đặt lịch' }}
-          </button>
-
-          <!-- Student: cancel own booking -->
-          <button *ngIf="isMySlot(s)" type="button" tfButton variant="danger" size="sm" (click)="onCancel(s.id)">
-            <lucide-icon name="circle-x" class="h-4 w-4"></lucide-icon>
-            Huỷ lịch
-          </button>
-
-          <!-- Teacher/Admin -->
-          <ng-container *ngIf="canManage">
-            <button *ngIf="s.isBooked" type="button" tfButton variant="secondary" size="sm" (click)="onCancel(s.id)">
-              <lucide-icon name="calendar-x" class="h-4 w-4"></lucide-icon>
-              Huỷ booking
-            </button>
-            <button type="button" tfButton variant="ghost" size="sm"
+        <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          @for (s of day.slots; track s) {
+            <div
+              tfCard
+              [tone]="toneFor(s)"
+              padding="md"
+              >
+              <div class="flex items-start justify-between gap-3">
+                <span class="flex items-center gap-2 text-lg font-extrabold tracking-heading">
+                  <lucide-icon name="clock" class="h-5 w-5" [strokeWidth]="2.5"></lucide-icon>
+                  {{ s.startTime | date: 'HH:mm' }} — {{ s.endTime | date: 'HH:mm' }}
+                </span>
+                @if (!s.isBooked) {
+                  <span tfBadge tone="success" [square]="true">Trống</span>
+                }
+                @if (isMySlot(s)) {
+                  <span tfBadge tone="primary" [square]="true">Lịch của bạn</span>
+                }
+                @if (s.isBooked && !isMySlot(s)) {
+                  <span tfBadge tone="muted" [square]="true">Đã đặt</span>
+                }
+              </div>
+              @if (!canManage) {
+                <p class="mt-4 flex items-center gap-2 text-ink-muted">
+                  <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ s.teacher }}
+                </p>
+              }
+              @if (canManage && s.isBooked) {
+                <p class="mt-4 flex items-center gap-2 text-ink-muted">
+                  <lucide-icon name="graduation-cap" class="h-4 w-4"></lucide-icon>{{ s.student }}
+                </p>
+              }
+              @if (s.course) {
+                <p class="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+                  <lucide-icon name="book-open" class="h-4 w-4"></lucide-icon>{{ s.course }}
+                </p>
+              }
+              <div class="mt-5 flex flex-wrap gap-2 border-t-2 border-white/40 pt-4">
+                <!-- Student: book -->
+                @if (!canManage && !s.isBooked) {
+                  <button
+                    type="button"
+                    tfButton variant="primary" size="sm"
+                    [disabled]="booking === s.id"
+                    (click)="onBook(s.id)"
+                    >
+                    <lucide-icon name="calendar-check" class="h-4 w-4"></lucide-icon>
+                    {{ booking === s.id ? 'Đang đặt...' : 'Đặt lịch' }}
+                  </button>
+                }
+                <!-- Student: cancel own booking -->
+                @if (isMySlot(s)) {
+                  <button type="button" tfButton variant="danger" size="sm" (click)="onCancel(s.id)">
+                    <lucide-icon name="circle-x" class="h-4 w-4"></lucide-icon>
+                    Huỷ lịch
+                  </button>
+                }
+                <!-- Teacher/Admin -->
+                @if (canManage) {
+                  @if (s.isBooked) {
+                    <button type="button" tfButton variant="secondary" size="sm" (click)="onCancel(s.id)">
+                      <lucide-icon name="calendar-x" class="h-4 w-4"></lucide-icon>
+                      Huỷ booking
+                    </button>
+                  }
+                  <button type="button" tfButton variant="ghost" size="sm"
                     class="!text-danger hover:!bg-danger-soft" (click)="onDelete(s.id)">
-              <lucide-icon name="trash-2" class="h-4 w-4"></lucide-icon>
-              Xoá slot
-            </button>
-          </ng-container>
+                    <lucide-icon name="trash-2" class="h-4 w-4"></lucide-icon>
+                    Xoá slot
+                  </button>
+                }
+              </div>
+            </div>
+          }
         </div>
       </div>
-    </div>
+    }
+    @if (!groupedDays.length) {
+      <tf-empty-state
+        icon="calendar-days"
+        title="Chưa có lịch nào"
+        [description]="canManage ? 'Tạo slot trống để học viên đặt lịch luyện nói.' : 'Hiện chưa có slot trống. Hãy quay lại sau.'"
+      ></tf-empty-state>
+    }
   </div>
-
-  <tf-empty-state
-    *ngIf="!groupedDays.length"
-    icon="calendar-days"
-    title="Chưa có lịch nào"
-    [description]="canManage ? 'Tạo slot trống để học viên đặt lịch luyện nói.' : 'Hiện chưa có slot trống. Hãy quay lại sau.'"
-  ></tf-empty-state>
-</div>
+}

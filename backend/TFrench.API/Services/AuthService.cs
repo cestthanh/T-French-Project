@@ -13,13 +13,14 @@ public class AuthService(AppDbContext db, IConfiguration config)
 {
     public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
     {
-        if (await db.Users.AnyAsync(u => u.Email == dto.Email))
+        var email = NormaliseEmail(dto.Email);
+        if (await db.Users.AnyAsync(u => u.Email == email))
             return null; // Email already exists
 
         var user = new User
         {
             FullName = dto.FullName,
-            Email = dto.Email.ToLower().Trim(),
+            Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             PhoneNumber = dto.PhoneNumber,
             Role = UserRole.Student // default role
@@ -34,7 +35,8 @@ public class AuthService(AppDbContext db, IConfiguration config)
 
     public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email.ToLower().Trim());
+        var email = NormaliseEmail(dto.Email);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             return null;
         if (!user.IsActive) return null;
@@ -69,4 +71,6 @@ public class AuthService(AppDbContext db, IConfiguration config)
 
     private static UserDto ToDto(User u) =>
         new(u.Id, u.FullName, u.Email, u.Role.ToString(), u.AvatarUrl);
+
+    private static string NormaliseEmail(string email) => email.Trim().ToLowerInvariant();
 }

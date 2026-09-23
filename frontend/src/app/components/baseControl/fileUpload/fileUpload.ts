@@ -11,8 +11,9 @@ import { FileService, FILE_RULES } from 'src/app/services/fileService';
  * server by the time the user finishes filling in the rest of the form.
  */
 @Component({
-  selector: 'tf-file-upload',
-  templateUrl: './fileUpload.html',
+    selector: 'tf-file-upload',
+    templateUrl: './fileUpload.html',
+    standalone: false
 })
 export class BaseFileUpload {
   @Input() label = 'Tệp đính kèm';

@@ -8,8 +8,8 @@ import { uriBooking } from './Uri/RequestUri/uriBooking';
 export class BookingService {
   constructor(private http: HttpClient) {}
 
-  getSlots(mySlots = false): Observable<BookingSlot[]> {
-    return this.http.get<BookingSlot[]>(uriBooking.LIST, { params: { mySlots: String(mySlots) } });
+  getSlots(): Observable<BookingSlot[]> {
+    return this.http.get<BookingSlot[]>(uriBooking.LIST);
   }
 
   createSlot(data: CreateSlotRequest): Observable<BookingSlot> {

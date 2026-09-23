@@ -14,8 +14,9 @@ interface ResourceKind { icon: string; chip: string; label: string; }
 type SourceMode = 'upload' | 'link';
 
 @Component({
-  selector: 'app-resources-list',
-  templateUrl: './resourceList.html',
+    selector: 'app-resources-list',
+    templateUrl: './resourceList.html',
+    standalone: false
 })
 export class ResourceList implements OnInit {
   resources: Resource[] = [];

@@ -2,8 +2,9 @@ import { Component, Input } from '@angular/core';
 
 /** Eyebrow + title + optional lead paragraph, with consistent rhythm. */
 @Component({
-  selector: 'tf-section-heading',
-  templateUrl: './sectionHeading.html',
+    selector: 'tf-section-heading',
+    templateUrl: './sectionHeading.html',
+    standalone: false
 })
 export class BaseSectionHeading {
   @Input() eyebrow?: string;

@@ -15,8 +15,9 @@ interface Tier {
 interface Faq { q: string; a: string; }
 
 @Component({
-  selector: 'app-home',
-  templateUrl: './home.html',
+    selector: 'app-home',
+    templateUrl: './home.html',
+    standalone: false
 })
 export class Home implements OnInit {
   latestPosts: BlogPost[] = [];

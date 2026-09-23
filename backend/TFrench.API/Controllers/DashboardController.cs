@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TFrench.API.Data;
+using TFrench.API.Models;
 
 namespace TFrench.API.Controllers;
 
@@ -25,7 +26,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
         {
             // Enrolled courses
             var enrolledIds = await db.Enrollments
-                .Where(e => e.StudentId == CurrentUserId && e.IsActive)
+                .Where(e => e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active)
                 .Select(e => e.CourseId).ToListAsync();
 
             // Pending assignments (enrolled, not yet submitted)
@@ -77,7 +78,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
                 .Select(c => c.Id).ToListAsync();
 
             var totalStudents = await db.Enrollments
-                .Where(e => myCourseIds.Contains(e.CourseId) && e.IsActive)
+                .Where(e => myCourseIds.Contains(e.CourseId) && e.Status == EnrollmentStatus.Active)
                 .Select(e => e.StudentId).Distinct().CountAsync();
 
             var pendingGrading = await db.Submissions

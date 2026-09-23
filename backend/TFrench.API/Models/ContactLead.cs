@@ -53,5 +53,9 @@ public class ContactLead
     public User? HandledBy { get; set; }
 
     public DateTime? HandledAt { get; set; }
+    public int? StudentId { get; set; }
+    public User? Student { get; set; }
+    public int? EnrollmentId { get; set; }
+    public Enrollment? Enrollment { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

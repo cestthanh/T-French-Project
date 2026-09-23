@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Course> Courses => Set<Course>();
+    public DbSet<CourseClass> CourseClasses => Set<CourseClass>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<Submission> Submissions => Set<Submission>();
@@ -15,6 +16,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
     public DbSet<ContactLead> ContactLeads => Set<ContactLead>();
+    public DbSet<Quiz> Quizzes => Set<Quiz>();
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<QuestionOption> QuestionOptions => Set<QuestionOption>();
+    public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<AttemptAnswer> AttemptAnswers => Set<AttemptAnswer>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,12 +77,47 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(l => l.HandledById)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<ContactLead>()
+            .HasOne(l => l.Student)
+            .WithMany()
+            .HasForeignKey(l => l.StudentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ContactLead>()
+            .HasOne(l => l.Enrollment)
+            .WithMany()
+            .HasForeignKey(l => l.EnrollmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Prevent cascade delete cycles
         modelBuilder.Entity<Course>()
             .HasOne(c => c.Teacher)
             .WithMany()
             .HasForeignKey(c => c.TeacherId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CourseClass>()
+            .HasOne(c => c.Teacher)
+            .WithMany()
+            .HasForeignKey(c => c.TeacherId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<CourseClass>()
+            .HasOne(c => c.Course)
+            .WithMany(c => c.Classes)
+            .HasForeignKey(c => c.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Enrollment>()
+            .HasOne(e => e.Class)
+            .WithMany(c => c.Enrollments)
+            .HasForeignKey(e => e.ClassId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Enrollment>()
+            .HasIndex(e => new { e.ClassId, e.StudentId })
+            .IsUnique()
+            .HasFilter("\"ClassId\" IS NOT NULL");
 
         modelBuilder.Entity<BookingSlot>()
             .HasOne(b => b.Student)
@@ -88,5 +130,46 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany(u => u.Submissions)
             .HasForeignKey(s => s.StudentId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Quiz>()
+            .HasOne(q => q.CreatedBy)
+            .WithMany()
+            .HasForeignKey(q => q.CreatedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Quiz>()
+            .HasOne(q => q.Class)
+            .WithMany()
+            .HasForeignKey(q => q.ClassId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<QuizAttempt>()
+            .HasIndex(a => new { a.QuizId, a.StudentId })
+            .IsUnique();
+
+        modelBuilder.Entity<AttemptAnswer>()
+            .HasIndex(a => new { a.AttemptId, a.QuestionId })
+            .IsUnique();
+
+        modelBuilder.Entity<QuizAttempt>()
+            .HasOne(a => a.Student)
+            .WithMany()
+            .HasForeignKey(a => a.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AttemptAnswer>()
+            .HasOne(a => a.GradedBy)
+            .WithMany()
+            .HasForeignKey(a => a.GradedById)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasOne(a => a.ActorUser)
+            .WithMany()
+            .HasForeignKey(a => a.ActorUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => a.CreatedAt);
     }
 }

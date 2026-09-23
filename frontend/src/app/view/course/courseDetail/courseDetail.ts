@@ -7,12 +7,14 @@ import { AuthService } from 'src/app/services/authService';
 import { ToastService } from 'src/app/services/share/toastService';
 
 @Component({
-  selector: 'app-course-detail',
-  templateUrl: './courseDetail.html',
+    selector: 'app-course-detail',
+    templateUrl: './courseDetail.html',
+    standalone: false
 })
 export class CourseDetail implements OnInit {
   course?: CourseDetailModel;
   enrolling = false;
+  selectedClassId: number | null = null;
 
   readonly outcomes = [
     'Phát âm chuẩn tiếng Pháp',
@@ -44,19 +46,29 @@ export class CourseDetail implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.courseService.getById(id).subscribe({
-      next: course => (this.course = course),
+      next: course => {
+        this.course = course;
+        this.selectedClassId = course.classes?.[0]?.id ?? null;
+      },
       error: () => this.router.navigate(['/courses']),
     });
   }
 
   onEnroll(): void {
     if (!this.course) return;
+    if (!this.selectedClassId) {
+      this.toast.error('Khoá học hiện chưa có lớp mở đăng ký.');
+      return;
+    }
     this.enrolling = true;
-    this.courseService.enroll(this.course.id).subscribe({
+    this.courseService.enroll(this.course.id, this.selectedClassId).subscribe({
       next: res => {
         this.enrolling = false;
-        this.course!.isEnrolled = true;
-        this.course!.enrollmentCount++;
+        this.course!.enrollmentStatus = res.status;
+        if (res.status === 'Active') {
+          this.course!.isEnrolled = true;
+          this.course!.enrollmentCount++;
+        }
         this.toast.success(res.message ?? 'Đăng ký thành công! 🎉');
       },
       error: err => {
@@ -64,5 +76,9 @@ export class CourseDetail implements OnInit {
         this.toast.error(err?.error?.message ?? 'Lỗi khi đăng ký.');
       },
     });
+  }
+
+  selectClass(classId: number): void {
+    this.selectedClassId = classId;
   }
 }

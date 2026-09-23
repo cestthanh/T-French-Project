@@ -1,0 +1,194 @@
+<tf-page-header title="Khoá học & lớp học" subtitle="Quản lý chương trình, lịch mở lớp và trạng thái ghi danh"></tf-page-header>
+
+@if (loading) {
+  <tf-spinner size="md" label="Đang tải dữ liệu..."></tf-spinner>
+}
+
+<div class="grid gap-6 xl:grid-cols-[1fr_24rem]">
+  <div class="space-y-8">
+    <section>
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-extrabold tracking-heading">Khoá học</h2>
+        <span tfBadge tone="primary-soft" [square]="true">{{ courses.length }} khoá</span>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2">
+        @for (course of courses; track course) {
+          <div tfCard tone="white" padding="md">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span tfBadge [tone]="course.isPublished ? 'success-soft' : 'muted'" [square]="true">
+                  {{ course.isPublished ? 'Công khai' : 'Bản nháp' }}
+                </span>
+                <h3 class="mt-3 text-lg font-extrabold">{{ course.title }}</h3>
+                <p class="mt-1 text-sm text-ink-muted">
+                  {{ course.level || 'Chưa đặt trình độ' }} · {{ course.classCount }} lớp · {{ course.enrollmentCount }} học viên
+                </p>
+              </div>
+              <button type="button" tfButton variant="outline" size="sm" (click)="togglePublish(course)">
+                {{ course.isPublished ? 'Ẩn' : 'Đăng' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+      @if (!loading && !courses.length) {
+        <tf-empty-state icon="book-open" title="Chưa có khoá học"
+        description="Tạo khoá học đầu tiên bằng biểu mẫu bên cạnh."></tf-empty-state>
+      }
+    </section>
+
+    <section>
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <h2 class="text-2xl font-extrabold tracking-heading">Lớp đang quản lý</h2>
+        <span tfBadge tone="secondary-soft" [square]="true">{{ classes.length }} lớp</span>
+      </div>
+      <div class="space-y-4">
+        @for (item of classes; track item) {
+          <div tfCard tone="white" padding="md">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div class="flex flex-wrap gap-2">
+                  <span tfBadge tone="primary-soft" [square]="true">{{ item.status }}</span>
+                  <span tfBadge tone="muted" [square]="true">{{ item.modality }}</span>
+                  @if (item.pendingCount) {
+                    <span tfBadge tone="accent-soft" [square]="true">
+                      {{ item.pendingCount }} chờ duyệt
+                    </span>
+                  }
+                </div>
+                <h3 class="mt-3 text-lg font-extrabold">{{ item.name }}</h3>
+                <p class="mt-1 text-sm text-ink-muted">{{ item.course }} · GV {{ item.teacher }}</p>
+                <p class="mt-2 text-sm text-ink-soft">
+                  {{ item.startDate | date:'dd/MM/yyyy HH:mm' }} · {{ item.enrollmentCount }}/{{ item.capacity }} học viên
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" tfButton variant="outline" size="sm" (click)="viewEnrollments(item)">Học viên</button>
+                <button type="button" tfButton variant="secondary" size="sm" (click)="editClass(item)">Sửa</button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      @if (!loading && !classes.length) {
+        <tf-empty-state icon="school" title="Chưa có lớp học"
+        description="Tạo lớp và gán giáo viên bằng biểu mẫu bên cạnh."></tf-empty-state>
+      }
+    </section>
+
+    @if (selectedClass) {
+      <section tfCard tone="primary-soft" padding="lg">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="eyebrow text-primary">Danh sách ghi danh</p>
+            <h2 class="mt-1 text-2xl font-extrabold">{{ selectedClass.name }}</h2>
+          </div>
+          <button type="button" tfButton variant="ghost" size="icon" (click)="selectedClass = null" aria-label="Đóng">
+            <lucide-icon name="x" class="h-5 w-5"></lucide-icon>
+          </button>
+        </div>
+        @if (isAdmin) {
+          <div class="mt-5 flex flex-wrap items-end gap-3 rounded-md bg-white p-4">
+            <tf-field label="Thêm học viên" class="min-w-64 flex-1">
+              <select tfInput [(ngModel)]="selectedStudentId">
+                <option [ngValue]="null">Chọn học viên</option>
+                @for (student of students; track student) {
+                  <option [ngValue]="student.id">{{ student.fullName }} — {{ student.email }}</option>
+                }
+              </select>
+            </tf-field>
+            <button type="button" tfButton variant="primary" (click)="addStudent()"
+              [disabled]="!selectedStudentId || addingStudent">
+              {{ addingStudent ? 'Đang thêm...' : 'Thêm vào lớp' }}
+            </button>
+          </div>
+        }
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full min-w-[38rem]">
+            <thead><tr class="bg-ink text-left text-xs uppercase text-white">
+              <th class="px-4 py-3">Học viên</th><th class="px-4 py-3">Đăng ký</th><th class="px-4 py-3">Trạng thái</th>
+            </tr></thead>
+            <tbody>
+              @for (row of enrollments; track row) {
+                <tr class="border-b-2 border-white">
+                  <td class="px-4 py-3"><strong>{{ row.student }}</strong><br><span class="text-sm text-ink-muted">{{ row.email }}</span></td>
+                  <td class="px-4 py-3 text-sm">{{ row.enrolledAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="px-4 py-3">
+                    @if (isAdmin) {
+                      <select tfInput [ngModel]="row.status"
+                        (ngModelChange)="changeEnrollmentStatus(row, $event)" class="!w-auto !bg-white !py-2">
+                        @for (status of enrollmentStatuses; track status) {
+                          <option [value]="status">{{ status }}</option>
+                        }
+                      </select>
+                    } @else {
+                      <span tfBadge tone="muted" [square]="true">{{ row.status }}</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (!enrollments.length) {
+          <tf-empty-state icon="users" title="Lớp chưa có học viên"
+          description="Các yêu cầu đăng ký sẽ xuất hiện tại đây."></tf-empty-state>
+        }
+      </section>
+    }
+  </div>
+
+  <aside class="space-y-6">
+    <form [formGroup]="courseForm" (ngSubmit)="createCourse()" tfCard tone="white" padding="lg" class="space-y-4">
+      <h2 class="text-lg font-extrabold">Tạo khoá học</h2>
+      <tf-field label="Tên khoá" [required]="true"><input tfInput formControlName="title" /></tf-field>
+      <tf-field label="Mô tả"><textarea tfInput rows="3" formControlName="description"></textarea></tf-field>
+      <tf-field label="Trình độ"><input tfInput formControlName="level" placeholder="A1, A2, B1..." /></tf-field>
+      <tf-field label="Học phí"><input tfInput type="number" min="0" formControlName="price" /></tf-field>
+      @if (isAdmin) {
+        <tf-field label="Giáo viên" [required]="true">
+          <select tfInput formControlName="teacherId"><option [ngValue]="null">Chọn giáo viên</option>@for (t of teachers; track t) {
+          <option [ngValue]="t.id">{{ t.fullName }}</option>
+        }</select>
+      </tf-field>
+    }
+    <button type="submit" tfButton variant="primary" [block]="true" [disabled]="courseForm.invalid || savingCourse">
+      {{ savingCourse ? 'Đang tạo...' : 'Tạo bản nháp' }}
+    </button>
+  </form>
+
+  <form [formGroup]="classForm" (ngSubmit)="saveClass()" tfCard tone="white" padding="lg" class="space-y-4">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-lg font-extrabold">{{ editingClassId ? 'Sửa lớp' : 'Tạo lớp' }}</h2>
+      @if (editingClassId) {
+        <button type="button" tfButton variant="ghost" size="sm" (click)="cancelEditClass()">Huỷ</button>
+      }
+    </div>
+    <tf-field label="Tên lớp" [required]="true"><input tfInput formControlName="name" /></tf-field>
+    <tf-field label="Khoá học" [required]="true">
+      <select tfInput formControlName="courseId"><option [ngValue]="null">Chọn khoá học</option>@for (c of courses; track c) {
+      <option [ngValue]="c.id">{{ c.title }}</option>
+    }</select>
+  </tf-field>
+  @if (isAdmin) {
+    <tf-field label="Giáo viên" [required]="true">
+      <select tfInput formControlName="teacherId"><option [ngValue]="null">Chọn giáo viên</option>@for (t of teachers; track t) {
+      <option [ngValue]="t.id">{{ t.fullName }}</option>
+    }</select>
+  </tf-field>
+}
+<tf-field label="Bắt đầu" [required]="true"><input tfInput type="datetime-local" formControlName="startDate" /></tf-field>
+<tf-field label="Kết thúc"><input tfInput type="datetime-local" formControlName="endDate" /></tf-field>
+<div class="grid grid-cols-2 gap-3">
+  <tf-field label="Sĩ số"><input tfInput type="number" min="1" max="500" formControlName="capacity" /></tf-field>
+  <tf-field label="Hình thức"><select tfInput formControlName="modality"><option>Online</option><option>Offline</option><option>Hybrid</option></select></tf-field>
+</div>
+<tf-field label="Trạng thái"><select tfInput formControlName="status"><option>Draft</option><option>Open</option><option>InProgress</option><option>Completed</option><option>Cancelled</option></select></tf-field>
+<tf-field label="Lịch học"><input tfInput formControlName="scheduleSummary" placeholder="Thứ 3, 5 · 19:00" /></tf-field>
+<tf-field label="Địa điểm / link học"><input tfInput formControlName="locationOrMeetingUrl" /></tf-field>
+<button type="submit" tfButton variant="secondary" [block]="true" [disabled]="classForm.invalid || savingClass">
+  {{ savingClass ? 'Đang lưu...' : editingClassId ? 'Lưu thay đổi' : 'Tạo lớp' }}
+</button>
+</form>
+</aside>
+</div>

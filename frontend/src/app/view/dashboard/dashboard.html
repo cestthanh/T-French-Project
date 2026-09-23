@@ -1,17 +1,18 @@
 <div class="flex min-h-screen bg-muted">
   <!-- Mobile scrim -->
-  <div
-    *ngIf="sidebarOpen && isMobile"
-    class="fixed inset-0 z-[150] bg-ink/50"
-    (click)="sidebarOpen = false"
-  ></div>
+  @if (sidebarOpen && isMobile) {
+    <div
+      class="fixed inset-0 z-[150] bg-ink/50"
+      (click)="sidebarOpen = false"
+    ></div>
+  }
 
   <!-- ══ SIDEBAR ══════════════════════════════════════════════════ Dark block -->
   <nav
     class="z-[160] flex w-72 shrink-0 flex-col bg-ink transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
     [ngClass]="isMobile ? 'fixed inset-y-0 left-0' : ''"
     [class.-translate-x-full]="isMobile && !sidebarOpen"
-  >
+    >
     <!-- Brand + identity -->
     <div class="border-b-2 border-white/10 p-6">
       <a routerLink="/home" class="flex items-center gap-3 no-underline">
@@ -32,22 +33,25 @@
 
     <!-- Nav -->
     <ul class="flex-1 space-y-1 overflow-y-auto p-4">
-      <li *ngFor="let item of visibleNav">
-        <a
-          [routerLink]="item.path"
-          routerLinkActive="!bg-primary !text-white"
-          [routerLinkActiveOptions]="{ exact: !!item.exact }"
-          (click)="closeOnMobile()"
-          class="flex items-center gap-3 rounded-md px-4 py-3 font-semibold text-white/60 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
-        >
-          <lucide-icon [name]="item.icon" class="h-5 w-5 shrink-0" [strokeWidth]="2.5"></lucide-icon>
-          <span class="flex-1">{{ item.label }}</span>
-          <span
-            *ngIf="badgeFor(item.path) as count"
-            class="rounded-full bg-danger px-2 py-0.5 text-xs font-bold text-white"
-          >{{ count }}</span>
-        </a>
-      </li>
+      @for (item of visibleNav; track item) {
+        <li>
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="!bg-primary !text-white"
+            [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            (click)="closeOnMobile()"
+            class="flex items-center gap-3 rounded-md px-4 py-3 font-semibold text-white/60 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
+            >
+            <lucide-icon [name]="item.icon" class="h-5 w-5 shrink-0" [strokeWidth]="2.5"></lucide-icon>
+            <span class="flex-1">{{ item.label }}</span>
+            @if (badgeFor(item.path); as count) {
+              <span
+                class="rounded-full bg-danger px-2 py-0.5 text-xs font-bold text-white"
+              >{{ count }}</span>
+            }
+          </a>
+        </li>
+      }
     </ul>
 
     <!-- Footer -->
@@ -68,7 +72,7 @@
     <!-- Mobile topbar -->
     <header class="sticky top-0 z-[140] flex items-center gap-3 border-b-2 border-line bg-white px-5 py-3 lg:hidden">
       <button type="button" tfButton variant="secondary" size="icon"
-              (click)="sidebarOpen = !sidebarOpen" aria-label="Mở menu">
+        (click)="sidebarOpen = !sidebarOpen" aria-label="Mở menu">
         <lucide-icon name="menu" class="h-5 w-5"></lucide-icon>
       </button>
       <span class="flex-1 font-extrabold tracking-heading">T-French</span>
@@ -79,7 +83,7 @@
 
     <main class="flex-1 p-6 lg:p-10">
       <!-- Overview: only on the dashboard index, not on child routes -->
-      <ng-container *ngIf="isOverview">
+      @if (isOverview) {
         <!-- Welcome banner: solid colour block -->
         <div class="mb-8 overflow-hidden rounded-lg bg-primary p-8 sm:p-10">
           <div class="relative flex flex-wrap items-center justify-between gap-6">
@@ -94,45 +98,50 @@
             </span>
           </div>
         </div>
-
         <!-- Stats -->
-        <div *ngIf="loading" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <div *ngFor="let i of [1, 2, 3, 4, 5, 6]" class="rounded-lg bg-white p-6">
-            <div class="h-14 w-14 animate-pulse rounded-full bg-muted"></div>
-            <div class="mt-4 h-9 w-20 animate-pulse rounded bg-line"></div>
-            <div class="mt-2 h-4 w-32 animate-pulse rounded bg-muted"></div>
+        @if (loading) {
+          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+              <div class="rounded-lg bg-white p-6">
+                <div class="h-14 w-14 animate-pulse rounded-full bg-muted"></div>
+                <div class="mt-4 h-9 w-20 animate-pulse rounded bg-line"></div>
+                <div class="mt-2 h-4 w-32 animate-pulse rounded bg-muted"></div>
+              </div>
+            }
           </div>
-        </div>
-
-        <div *ngIf="!loading" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <tf-stat
-            *ngFor="let card of statCards"
-            [icon]="card.icon"
-            [value]="card.value"
-            [label]="card.label"
-            [tone]="card.tone"
-            [urgent]="!!card.urgent"
-          ></tf-stat>
-        </div>
-
+        }
+        @if (!loading) {
+          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (card of statCards; track card) {
+              <tf-stat
+                [icon]="card.icon"
+                [value]="card.value"
+                [label]="card.label"
+                [tone]="card.tone"
+                [urgent]="!!card.urgent"
+              ></tf-stat>
+            }
+          </div>
+        }
         <!-- Quick actions -->
         <div class="mt-10">
           <p class="eyebrow text-ink-muted">Truy cập nhanh</p>
           <div class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <a
-              *ngFor="let action of quickActions"
-              [routerLink]="action.path"
-              tfCard [tone]="action.tone" padding="md" [interactive]="true"
-              class="flex flex-col items-center gap-3 text-center no-underline"
-            >
-              <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white transition-transform duration-200 group-hover:scale-110">
-                <lucide-icon [name]="action.icon" class="h-6 w-6" [ngClass]="action.iconClass" [strokeWidth]="2.5"></lucide-icon>
-              </span>
-              <span class="font-bold tracking-heading">{{ action.label }}</span>
-            </a>
+            @for (action of quickActions; track action) {
+              <a
+                [routerLink]="action.path"
+                tfCard [tone]="action.tone" padding="md" [interactive]="true"
+                class="flex flex-col items-center gap-3 text-center no-underline"
+                >
+                <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white transition-transform duration-200 group-hover:scale-110">
+                  <lucide-icon [name]="action.icon" class="h-6 w-6" [ngClass]="action.iconClass" [strokeWidth]="2.5"></lucide-icon>
+                </span>
+                <span class="font-bold tracking-heading">{{ action.label }}</span>
+              </a>
+            }
           </div>
         </div>
-      </ng-container>
+      }
 
       <router-outlet></router-outlet>
     </main>

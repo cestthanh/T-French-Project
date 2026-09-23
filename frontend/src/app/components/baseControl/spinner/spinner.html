@@ -7,5 +7,7 @@
     [class.border-t-primary]="tone === 'primary'"
     [class.border-t-white]="tone === 'white'"
   ></span>
-  <span *ngIf="label" class="font-medium text-ink-muted">{{ label }}</span>
+  @if (label) {
+    <span class="font-medium text-ink-muted">{{ label }}</span>
+  }
 </div>

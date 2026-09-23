@@ -30,10 +30,45 @@ public static class DataSeeder
             await db.SaveChangesAsync();
         }
 
-        // ── Enrollment (skip if exists) ───────────────────────────────────────
-        if (!await db.Enrollments.AnyAsync(e => e.StudentId == student.Id && e.CourseId == course.Id))
+        // ── Default class/cohort ──────────────────────────────────────────────
+        var courseClass = await db.CourseClasses.FirstOrDefaultAsync(c => c.CourseId == course.Id);
+        if (courseClass == null)
         {
-            db.Enrollments.Add(new Enrollment { StudentId = student.Id, CourseId = course.Id, IsActive = true });
+            courseClass = new CourseClass
+            {
+                Name = "Lớp A1 Demo",
+                CourseId = course.Id,
+                TeacherId = teacher.Id,
+                StartDate = DateTime.UtcNow.Date.AddDays(7),
+                EndDate = DateTime.UtcNow.Date.AddMonths(3),
+                Capacity = 20,
+                Modality = ClassModality.Online,
+                Status = ClassStatus.Open,
+                ScheduleSummary = "Lịch học sẽ được trung tâm xác nhận",
+            };
+            db.CourseClasses.Add(courseClass);
+            await db.SaveChangesAsync();
+        }
+
+        // ── Enrollment (skip if exists) ───────────────────────────────────────
+        var enrollment = await db.Enrollments.FirstOrDefaultAsync(e =>
+            e.StudentId == student.Id && e.CourseId == course.Id);
+        if (enrollment == null)
+        {
+            db.Enrollments.Add(new Enrollment
+            {
+                StudentId = student.Id,
+                CourseId = course.Id,
+                ClassId = courseClass.Id,
+                Status = EnrollmentStatus.Active,
+                IsActive = true,
+            });
+            await db.SaveChangesAsync();
+        }
+        else if (enrollment.ClassId == null)
+        {
+            enrollment.ClassId = courseClass.Id;
+            enrollment.Status = enrollment.IsActive ? EnrollmentStatus.Active : EnrollmentStatus.Cancelled;
             await db.SaveChangesAsync();
         }
 

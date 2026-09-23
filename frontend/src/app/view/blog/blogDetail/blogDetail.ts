@@ -4,9 +4,10 @@ import { BlogService } from 'src/app/services/blogService';
 import { BlogPost } from 'src/app/interface';
 
 @Component({
-  selector: 'app-blog-detail',
-  templateUrl: './blogDetail.html',
-  styleUrls: ['./blogDetail.scss'],
+    selector: 'app-blog-detail',
+    templateUrl: './blogDetail.html',
+    styleUrls: ['./blogDetail.scss'],
+    standalone: false
 })
 export class BlogDetail implements OnInit {
   post: BlogPost | null = null;

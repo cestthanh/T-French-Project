@@ -55,6 +55,98 @@ namespace TFrench.API.Data.Migrations
                     b.ToTable("Assignments");
                 });
 
+            modelBuilder.Entity("TFrench.API.Models.AttemptAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AttemptId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("AutoScore")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Feedback")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("GradedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("GradedById")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("ManualScore")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SelectedOptionIdsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TextAnswer")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GradedById");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("AttemptId", "QuestionId")
+                        .IsUnique();
+
+                    b.ToTable("AttemptAnswers");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("TFrench.API.Models.BlogPost", b =>
                 {
                     b.Property<int>("Id")
@@ -164,6 +256,9 @@ namespace TFrench.API.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("EnrollmentId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -194,9 +289,16 @@ namespace TFrench.API.Data.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("StudentId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("EnrollmentId");
+
                     b.HasIndex("HandledById");
+
+                    b.HasIndex("StudentId");
 
                     b.HasIndex("Status", "CreatedAt");
 
@@ -242,10 +344,65 @@ namespace TFrench.API.Data.Migrations
                     b.ToTable("Courses");
                 });
 
+            modelBuilder.Entity("TFrench.API.Models.CourseClass", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LocationOrMeetingUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Modality")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ScheduleSummary")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeacherId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("TeacherId");
+
+                    b.ToTable("CourseClasses");
+                });
+
             modelBuilder.Entity("TFrench.API.Models.Enrollment", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ClassId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("CourseId")
@@ -257,6 +414,9 @@ namespace TFrench.API.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("StudentId")
                         .HasColumnType("INTEGER");
 
@@ -266,7 +426,175 @@ namespace TFrench.API.Data.Migrations
 
                     b.HasIndex("StudentId");
 
+                    b.HasIndex("ClassId", "StudentId")
+                        .IsUnique()
+                        .HasFilter("\"ClassId\" IS NOT NULL");
+
                     b.ToTable("Enrollments");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuestionOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("QuestionOptions");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.Quiz", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CloseAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CreatedById")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxAttempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("OpenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ShowAnswersAfterGrading")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.ToTable("Quizzes");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuizAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QuizId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("Score")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("QuizId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("QuizAttempts");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuizQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Points")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("QuizId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Rubric")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizId");
+
+                    b.ToTable("QuizQuestions");
                 });
 
             modelBuilder.Entity("TFrench.API.Models.Resource", b =>
@@ -466,6 +794,42 @@ namespace TFrench.API.Data.Migrations
                     b.Navigation("Course");
                 });
 
+            modelBuilder.Entity("TFrench.API.Models.AttemptAnswer", b =>
+                {
+                    b.HasOne("TFrench.API.Models.QuizAttempt", "Attempt")
+                        .WithMany("Answers")
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TFrench.API.Models.User", "GradedBy")
+                        .WithMany()
+                        .HasForeignKey("GradedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("TFrench.API.Models.QuizQuestion", "Question")
+                        .WithMany("Answers")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Attempt");
+
+                    b.Navigation("GradedBy");
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.AuditLog", b =>
+                {
+                    b.HasOne("TFrench.API.Models.User", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ActorUser");
+                });
+
             modelBuilder.Entity("TFrench.API.Models.BlogPost", b =>
                 {
                     b.HasOne("TFrench.API.Models.User", "Author")
@@ -505,12 +869,26 @@ namespace TFrench.API.Data.Migrations
 
             modelBuilder.Entity("TFrench.API.Models.ContactLead", b =>
                 {
+                    b.HasOne("TFrench.API.Models.Enrollment", "Enrollment")
+                        .WithMany()
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("TFrench.API.Models.User", "HandledBy")
                         .WithMany()
                         .HasForeignKey("HandledById")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("TFrench.API.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Enrollment");
+
                     b.Navigation("HandledBy");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("TFrench.API.Models.Course", b =>
@@ -524,8 +902,32 @@ namespace TFrench.API.Data.Migrations
                     b.Navigation("Teacher");
                 });
 
+            modelBuilder.Entity("TFrench.API.Models.CourseClass", b =>
+                {
+                    b.HasOne("TFrench.API.Models.Course", "Course")
+                        .WithMany("Classes")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TFrench.API.Models.User", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Teacher");
+                });
+
             modelBuilder.Entity("TFrench.API.Models.Enrollment", b =>
                 {
+                    b.HasOne("TFrench.API.Models.CourseClass", "Class")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("TFrench.API.Models.Course", "Course")
                         .WithMany("Enrollments")
                         .HasForeignKey("CourseId")
@@ -538,9 +940,79 @@ namespace TFrench.API.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Class");
+
                     b.Navigation("Course");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuestionOption", b =>
+                {
+                    b.HasOne("TFrench.API.Models.QuizQuestion", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.Quiz", b =>
+                {
+                    b.HasOne("TFrench.API.Models.CourseClass", "Class")
+                        .WithMany()
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TFrench.API.Models.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TFrench.API.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuizAttempt", b =>
+                {
+                    b.HasOne("TFrench.API.Models.Quiz", "Quiz")
+                        .WithMany("Attempts")
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TFrench.API.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuizQuestion", b =>
+                {
+                    b.HasOne("TFrench.API.Models.Quiz", "Quiz")
+                        .WithMany("Questions")
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("TFrench.API.Models.Resource", b =>
@@ -615,9 +1087,35 @@ namespace TFrench.API.Data.Migrations
 
                     b.Navigation("BookingSlots");
 
+                    b.Navigation("Classes");
+
                     b.Navigation("Enrollments");
 
                     b.Navigation("Resources");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.CourseClass", b =>
+                {
+                    b.Navigation("Enrollments");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.Quiz", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuizAttempt", b =>
+                {
+                    b.Navigation("Answers");
+                });
+
+            modelBuilder.Entity("TFrench.API.Models.QuizQuestion", b =>
+                {
+                    b.Navigation("Answers");
+
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("TFrench.API.Models.User", b =>

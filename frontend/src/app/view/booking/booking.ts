@@ -6,8 +6,9 @@ import { AuthService } from 'src/app/services/authService';
 import { ToastService } from 'src/app/services/share/toastService';
 
 @Component({
-  selector: 'app-bookings',
-  templateUrl: './booking.html',
+    selector: 'app-bookings',
+    templateUrl: './booking.html',
+    standalone: false
 })
 export class Booking implements OnInit {
   slots: BookingSlot[] = [];
@@ -20,6 +21,10 @@ export class Booking implements OnInit {
 
   get canManage(): boolean {
     return this.auth.isTeacher || this.auth.isAdmin;
+  }
+
+  get canCreate(): boolean {
+    return this.auth.isTeacher;
   }
 
   constructor(
@@ -39,7 +44,7 @@ export class Booking implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.bookingService.getSlots(this.canManage).subscribe({
+    this.bookingService.getSlots().subscribe({
       next: data => {
         this.slots = data.sort(
           (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),

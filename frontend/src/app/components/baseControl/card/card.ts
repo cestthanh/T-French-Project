@@ -13,7 +13,8 @@ export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
  * `border` option — a card that needs an outline is a different component.
  */
 @Directive({
-  selector: '[tfCard]',
+    selector: '[tfCard]',
+    standalone: false
 })
 export class BaseCard {
   @Input() tone: CardTone = 'white';

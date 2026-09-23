@@ -15,6 +15,20 @@ export interface CourseDetail extends Course {
   assignmentCount: number;
   resourceCount: number;
   isEnrolled: boolean;
+  enrollmentStatus?: 'Active' | 'Pending' | 'Paused' | 'Completed' | 'Cancelled' | 'Expired';
+  classes: CourseClassSummary[];
+}
+
+export interface CourseClassSummary {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate?: string;
+  capacity: number;
+  modality: 'Online' | 'Offline' | 'Hybrid';
+  scheduleSummary?: string;
+  teacher: string;
+  enrollmentCount: number;
 }
 
 export interface CreateCourseRequest {
@@ -23,4 +37,5 @@ export interface CreateCourseRequest {
   level?: string;
   price?: number;
   imageUrl?: string;
+  teacherId?: number;
 }

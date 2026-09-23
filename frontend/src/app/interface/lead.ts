@@ -14,6 +14,17 @@ export interface ContactLead {
   createdAt: string;
   handledAt?: string;
   handledBy?: string;
+  studentId?: number;
+  enrollmentId?: number;
+}
+
+export interface ConvertLeadResult {
+  id: number;
+  status: LeadStatus;
+  studentId: number;
+  enrollmentId: number;
+  createdAccount: boolean;
+  temporaryPassword?: string;
 }
 
 /** What the public contact form sends. No auth, no account required. */

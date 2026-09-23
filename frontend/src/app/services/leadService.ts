@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ContactLead, CreateLeadRequest, LeadStats, LeadStatus } from 'src/app/interface';
+import { ContactLead, ConvertLeadResult, CreateLeadRequest, LeadStats, LeadStatus } from 'src/app/interface';
 import { uriLead } from './Uri/RequestUri/uriLead';
 
 /**
@@ -35,5 +35,9 @@ export class LeadService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(uriLead.DELETE(id));
+  }
+
+  convert(id: number, classId: number): Observable<ConvertLeadResult> {
+    return this.http.post<ConvertLeadResult>(uriLead.CONVERT(id), { classId });
   }
 }

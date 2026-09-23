@@ -3,194 +3,204 @@
   Quay lại
 </a>
 
-<tf-spinner *ngIf="loading" size="md" label="Đang tải bài tập..."></tf-spinner>
+@if (loading) {
+  <tf-spinner size="md" label="Đang tải bài tập..."></tf-spinner>
+}
 
-<ng-container *ngIf="!loading && assignment">
+@if (!loading && assignment) {
   <!-- ══ HEADER: solid colour block ═══════════════════════════════════════ -->
   <div tfCard [tone]="isOverdue(assignment.dueDate) ? 'danger-soft' : 'primary'" padding="lg" class="mb-8">
     <h1 class="text-3xl font-extrabold tracking-heading sm:text-4xl">{{ assignment.title }}</h1>
-
     <div class="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3">
       <span class="flex items-center gap-2 font-semibold"
-            [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/90'">
+        [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/90'">
         <lucide-icon name="graduation-cap" class="h-5 w-5"></lucide-icon>
         {{ assignment.course?.title }}
       </span>
       <span class="flex items-center gap-2 font-semibold"
-            [ngClass]="isOverdue(assignment.dueDate) ? 'text-danger' : 'text-white/90'">
+        [ngClass]="isOverdue(assignment.dueDate) ? 'text-danger' : 'text-white/90'">
         <lucide-icon name="clock" class="h-5 w-5"></lucide-icon>
         Hạn: {{ assignment.dueDate | date: 'dd/MM/yyyy HH:mm' }}
       </span>
-      <span *ngIf="isOverdue(assignment.dueDate)" tfBadge tone="danger">Quá hạn</span>
+      @if (isOverdue(assignment.dueDate)) {
+        <span tfBadge tone="danger">Quá hạn</span>
+      }
     </div>
-
-    <p *ngIf="assignment.description" class="mt-6 max-w-3xl text-lg leading-relaxed"
-       [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/80'">
-      {{ assignment.description }}
-    </p>
-
+    @if (assignment.description) {
+      <p class="mt-6 max-w-3xl text-lg leading-relaxed"
+        [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/80'">
+        {{ assignment.description }}
+      </p>
+    }
     <!-- Đề bài đính kèm -->
-    <div *ngIf="assignment.attachment || assignment.attachmentUrl" class="mt-6 max-w-xl">
-      <tf-file-chip
-        [file]="assignment.attachment"
-        [url]="assignment.attachmentUrl"
-        urlLabel="Mở đề bài"
-      ></tf-file-chip>
-    </div>
-  </div>
-
-  <!-- ══ STUDENT: submit ═════════════════════════════════════════════════ -->
-  <ng-container *ngIf="!canGrade">
-    <div *ngIf="!mySubmission" tfCard tone="white" padding="lg">
-      <h2 class="text-xl font-extrabold tracking-heading">Nộp bài</h2>
-
-      <form [formGroup]="submitForm" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
-        <div class="flex gap-2">
-          <button
-            type="button"
-            (click)="setSubmitMode('upload')"
-            class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-            [ngClass]="submitMode === 'upload' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
-          >
-            <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
-            Tải file lên
-          </button>
-          <button
-            type="button"
-            (click)="setSubmitMode('link')"
-            class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-            [ngClass]="submitMode === 'link' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
-          >
-            <lucide-icon name="link" class="h-4 w-4"></lucide-icon>
-            Dán link
-          </button>
-        </div>
-
-        <tf-file-upload
-          *ngIf="submitMode === 'upload'"
-          label="Bài làm"
-          hint="Chỉ giáo viên phụ trách khoá học và bạn xem được file này."
-          (fileChange)="onFileUploaded($event)"
-        ></tf-file-upload>
-
-        <tf-field *ngIf="submitMode === 'link'" label="Link bài làm" for="sub-url"
-                  hint="Google Drive, OneDrive... Nhớ mở quyền xem cho giáo viên.">
-          <input id="sub-url" tfInput formControlName="fileUrl" placeholder="https://drive.google.com/..." />
-        </tf-field>
-
-        <tf-field label="Ghi chú cho giáo viên" for="sub-note">
-          <textarea id="sub-note" tfInput formControlName="note" rows="3"
-                    placeholder="Em chưa chắc phần chia động từ ở câu 3..."></textarea>
-        </tf-field>
-
-        <button type="submit" tfButton variant="primary" size="lg"
-                [disabled]="saving || !canSubmit" class="self-start">
-          <lucide-icon name="send" class="h-5 w-5"></lucide-icon>
-          {{ saving ? 'Đang nộp...' : 'Nộp bài' }}
-        </button>
-      </form>
-    </div>
-
-    <div *ngIf="mySubmission" tfCard tone="success-soft" padding="lg">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-success">
-            <lucide-icon name="check" class="h-7 w-7 text-white" [strokeWidth]="3"></lucide-icon>
-          </span>
-          <div>
-            <h2 class="text-xl font-extrabold tracking-heading">Đã nộp bài</h2>
-            <p class="mt-1 text-ink-muted">{{ mySubmission.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
-          </div>
-        </div>
-        <span tfBadge [tone]="mySubmission.grade != null ? 'success' : 'muted'" [square]="true">
-          {{ mySubmission.grade != null ? mySubmission.grade + '/10' : 'Chờ chấm' }}
-        </span>
-      </div>
-
-      <div *ngIf="mySubmission.file || mySubmission.fileUrl" class="mt-6">
+    @if (assignment.attachment || assignment.attachmentUrl) {
+      <div class="mt-6 max-w-xl">
         <tf-file-chip
-          [file]="mySubmission.file"
-          [url]="mySubmission.fileUrl"
-          urlLabel="Mở bài đã nộp"
+          [file]="assignment.attachment"
+          [url]="assignment.attachmentUrl"
+          urlLabel="Mở đề bài"
         ></tf-file-chip>
       </div>
-
-      <div *ngIf="mySubmission.feedback" class="mt-6 flex items-start gap-3 rounded-md bg-white p-5">
-        <lucide-icon name="message-square" class="mt-0.5 h-5 w-5 shrink-0 text-success"></lucide-icon>
-        <div>
-          <p class="eyebrow text-ink-muted">Nhận xét của giáo viên</p>
-          <p class="mt-2 text-ink-soft">{{ mySubmission.feedback }}</p>
-        </div>
+    }
+  </div>
+  <!-- ══ STUDENT: submit ═════════════════════════════════════════════════ -->
+  @if (!canGrade) {
+    @if (!mySubmission) {
+      <div tfCard tone="white" padding="lg">
+        <h2 class="text-xl font-extrabold tracking-heading">Nộp bài</h2>
+        <form [formGroup]="submitForm" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
+          <div class="flex gap-2">
+            <button
+              type="button"
+              (click)="setSubmitMode('upload')"
+              class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+              [ngClass]="submitMode === 'upload' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+              >
+              <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
+              Tải file lên
+            </button>
+            <button
+              type="button"
+              (click)="setSubmitMode('link')"
+              class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+              [ngClass]="submitMode === 'link' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+              >
+              <lucide-icon name="link" class="h-4 w-4"></lucide-icon>
+              Dán link
+            </button>
+          </div>
+          @if (submitMode === 'upload') {
+            <tf-file-upload
+              label="Bài làm"
+              hint="Chỉ giáo viên phụ trách khoá học và bạn xem được file này."
+              (fileChange)="onFileUploaded($event)"
+            ></tf-file-upload>
+          }
+          @if (submitMode === 'link') {
+            <tf-field label="Link bài làm" for="sub-url"
+              hint="Google Drive, OneDrive... Nhớ mở quyền xem cho giáo viên.">
+              <input id="sub-url" tfInput formControlName="fileUrl" placeholder="https://drive.google.com/..." />
+            </tf-field>
+          }
+          <tf-field label="Ghi chú cho giáo viên" for="sub-note">
+            <textarea id="sub-note" tfInput formControlName="note" rows="3"
+            placeholder="Em chưa chắc phần chia động từ ở câu 3..."></textarea>
+          </tf-field>
+          <button type="submit" tfButton variant="primary" size="lg"
+            [disabled]="saving || !canSubmit" class="self-start">
+            <lucide-icon name="send" class="h-5 w-5"></lucide-icon>
+            {{ saving ? 'Đang nộp...' : 'Nộp bài' }}
+          </button>
+        </form>
       </div>
-    </div>
-  </ng-container>
-
+    }
+    @if (mySubmission) {
+      <div tfCard tone="success-soft" padding="lg">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-success">
+              <lucide-icon name="check" class="h-7 w-7 text-white" [strokeWidth]="3"></lucide-icon>
+            </span>
+            <div>
+              <h2 class="text-xl font-extrabold tracking-heading">Đã nộp bài</h2>
+              <p class="mt-1 text-ink-muted">{{ mySubmission.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+            </div>
+          </div>
+          <span tfBadge [tone]="mySubmission.grade != null ? 'success' : 'muted'" [square]="true">
+            {{ mySubmission.grade != null ? mySubmission.grade + '/10' : 'Chờ chấm' }}
+          </span>
+        </div>
+        @if (mySubmission.file || mySubmission.fileUrl) {
+          <div class="mt-6">
+            <tf-file-chip
+              [file]="mySubmission.file"
+              [url]="mySubmission.fileUrl"
+              urlLabel="Mở bài đã nộp"
+            ></tf-file-chip>
+          </div>
+        }
+        @if (mySubmission.feedback) {
+          <div class="mt-6 flex items-start gap-3 rounded-md bg-white p-5">
+            <lucide-icon name="message-square" class="mt-0.5 h-5 w-5 shrink-0 text-success"></lucide-icon>
+            <div>
+              <p class="eyebrow text-ink-muted">Nhận xét của giáo viên</p>
+              <p class="mt-2 text-ink-soft">{{ mySubmission.feedback }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
   <!-- ══ TEACHER/ADMIN: grade ════════════════════════════════════════════ -->
-  <ng-container *ngIf="canGrade">
+  @if (canGrade) {
     <p class="eyebrow text-ink-muted">
       Danh sách bài nộp ({{ assignment.submissions?.length || 0 }})
     </p>
-
-    <tf-empty-state
-      *ngIf="!assignment.submissions?.length"
-      class="mt-5 block"
-      icon="inbox"
-      title="Chưa có học viên nào nộp bài"
-      description="Bài nộp sẽ xuất hiện ở đây ngay khi học viên gửi."
-    ></tf-empty-state>
-
+    @if (!assignment.submissions?.length) {
+      <tf-empty-state
+        class="mt-5 block"
+        icon="inbox"
+        title="Chưa có học viên nào nộp bài"
+        description="Bài nộp sẽ xuất hiện ở đây ngay khi học viên gửi."
+      ></tf-empty-state>
+    }
     <div class="mt-5 flex flex-col gap-5">
-      <div *ngFor="let s of assignment.submissions" tfCard tone="white" padding="lg">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-extrabold text-white">
-              {{ (s.student?.fullName || '?')[0] | uppercase }}
-            </span>
-            <div>
-              <p class="font-bold tracking-heading">{{ s.student?.fullName }}</p>
-              <p class="text-sm text-ink-muted">{{ s.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+      @for (s of assignment.submissions; track s) {
+        <div tfCard tone="white" padding="lg">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-extrabold text-white">
+                {{ (s.student?.fullName || '?')[0] | uppercase }}
+              </span>
+              <div>
+                <p class="font-bold tracking-heading">{{ s.student?.fullName }}</p>
+                <p class="text-sm text-ink-muted">{{ s.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+              </div>
             </div>
+            <span tfBadge [tone]="s.grade != null ? 'success' : 'muted'" [square]="true">
+              {{ s.grade != null ? s.grade + '/10' : 'Chưa chấm' }}
+            </span>
           </div>
-          <span tfBadge [tone]="s.grade != null ? 'success' : 'muted'" [square]="true">
-            {{ s.grade != null ? s.grade + '/10' : 'Chưa chấm' }}
-          </span>
-        </div>
-
-        <div *ngIf="s.file || s.fileUrl" class="mt-5">
-          <tf-file-chip [file]="s.file" [url]="s.fileUrl" urlLabel="Mở bài nộp"></tf-file-chip>
-        </div>
-
-        <div *ngIf="s.note" class="mt-5 flex items-start gap-3 rounded-md bg-muted p-4">
-          <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
-          <p class="break-all text-ink-soft">{{ s.note }}</p>
-        </div>
-
-        <!-- Inline grading -->
-        <div *ngIf="gradingId === s.id" class="mt-6 flex flex-wrap items-end gap-4 border-t-2 border-muted pt-6">
-          <tf-field label="Điểm (0-10)" class="w-32">
-            <input tfInput type="number" min="0" max="10" [(ngModel)]="gradeValue" [ngModelOptions]="{ standalone: true }" />
-          </tf-field>
-          <tf-field label="Nhận xét" class="min-w-56 flex-1">
-            <input tfInput [(ngModel)]="feedbackValue" [ngModelOptions]="{ standalone: true }"
-                   placeholder="Bài viết tốt, chú ý chia động từ..." />
-          </tf-field>
-          <div class="flex gap-3">
-            <button type="button" tfButton variant="primary" size="md" (click)="submitGrade(s.id)">Lưu</button>
-            <button type="button" tfButton variant="secondary" size="md" (click)="gradingId = null">Huỷ</button>
+          @if (s.file || s.fileUrl) {
+            <div class="mt-5">
+              <tf-file-chip [file]="s.file" [url]="s.fileUrl" urlLabel="Mở bài nộp"></tf-file-chip>
+            </div>
+          }
+          @if (s.note) {
+            <div class="mt-5 flex items-start gap-3 rounded-md bg-muted p-4">
+              <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
+              <p class="break-all text-ink-soft">{{ s.note }}</p>
+            </div>
+          }
+          <!-- Inline grading -->
+          @if (gradingId === s.id) {
+            <div class="mt-6 flex flex-wrap items-end gap-4 border-t-2 border-muted pt-6">
+              <tf-field label="Điểm (0-10)" class="w-32">
+                <input tfInput type="number" min="0" max="10" [(ngModel)]="gradeValue" [ngModelOptions]="{ standalone: true }" />
+              </tf-field>
+              <tf-field label="Nhận xét" class="min-w-56 flex-1">
+                <input tfInput [(ngModel)]="feedbackValue" [ngModelOptions]="{ standalone: true }"
+                  placeholder="Bài viết tốt, chú ý chia động từ..." />
+                </tf-field>
+                <div class="flex gap-3">
+                  <button type="button" tfButton variant="primary" size="md" (click)="submitGrade(s.id)">Lưu</button>
+                  <button type="button" tfButton variant="secondary" size="md" (click)="gradingId = null">Huỷ</button>
+                </div>
+              </div>
+            }
+            @if (gradingId !== s.id) {
+              <button
+                type="button"
+                tfButton variant="outline" size="sm"
+                class="mt-6"
+                (click)="startGrade(s)"
+                >
+                <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
+                {{ s.grade != null ? 'Chấm lại' : 'Chấm điểm' }}
+              </button>
+            }
           </div>
-        </div>
-
-        <button
-          *ngIf="gradingId !== s.id"
-          type="button"
-          tfButton variant="outline" size="sm"
-          class="mt-6"
-          (click)="startGrade(s)"
-        >
-          <lucide-icon name="square-pen" class="h-4 w-4"></lucide-icon>
-          {{ s.grade != null ? 'Chấm lại' : 'Chấm điểm' }}
-        </button>
+        }
       </div>
-    </div>
-  </ng-container>
-</ng-container>
+    }
+  }

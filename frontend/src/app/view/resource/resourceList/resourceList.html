@@ -1,182 +1,197 @@
 <tf-page-header title="Tài liệu học tập" subtitle="Kho tài liệu PDF, video và học liệu bổ sung">
-  <button *ngIf="canManage" type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
-    <lucide-icon [name]="showCreate ? 'x' : 'plus'" class="h-4 w-4"></lucide-icon>
-    {{ showCreate ? 'Đóng' : 'Thêm tài liệu' }}
-  </button>
+  @if (canManage) {
+    <button type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
+      <lucide-icon [name]="showCreate ? 'x' : 'plus'" class="h-4 w-4"></lucide-icon>
+      {{ showCreate ? 'Đóng' : 'Thêm tài liệu' }}
+    </button>
+  }
 </tf-page-header>
 
 <!-- ══ CREATE FORM ═════════════════════════════════════════════════════════ -->
-<div *ngIf="showCreate && canManage" tfCard tone="white" padding="lg" class="mb-8 animate-fade-up">
-  <h2 class="text-xl font-extrabold tracking-heading">Thêm tài liệu mới</h2>
-
-  <form [formGroup]="createForm" (ngSubmit)="onCreate()" class="mt-6 flex flex-col gap-5">
-    <div class="grid gap-5 sm:grid-cols-2">
-      <tf-field label="Tiêu đề" [required]="true" for="r-title">
-        <input id="r-title" tfInput formControlName="title" placeholder="Bảng chữ cái tiếng Pháp" />
-      </tf-field>
-      <tf-field label="Danh mục" for="r-cat">
-        <input id="r-cat" tfInput formControlName="category" placeholder="Ngữ pháp, Từ vựng..." />
-      </tf-field>
-    </div>
-
-    <tf-field label="Mô tả" for="r-desc">
-      <textarea id="r-desc" tfInput formControlName="description" rows="2"
-                placeholder="Video học bảng chữ cái và cách phát âm"></textarea>
-    </tf-field>
-
-    <!-- Source: upload into the centre's own storage, or point at a link.
-         Uploading is first because it is the option that keeps the material
-         behind the access check. -->
-    <div class="flex flex-col gap-4">
-      <div class="flex gap-2">
-        <button
-          type="button"
-          (click)="setSourceMode('upload')"
-          class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-          [ngClass]="sourceMode === 'upload' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
-        >
-          <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
-          Tải file lên
-        </button>
-        <button
-          type="button"
-          (click)="setSourceMode('link')"
-          class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-          [ngClass]="sourceMode === 'link' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
-        >
-          <lucide-icon name="link" class="h-4 w-4"></lucide-icon>
-          Dán link ngoài
-        </button>
+@if (showCreate && canManage) {
+  <div tfCard tone="white" padding="lg" class="mb-8 animate-fade-up">
+    <h2 class="text-xl font-extrabold tracking-heading">Thêm tài liệu mới</h2>
+    <form [formGroup]="createForm" (ngSubmit)="onCreate()" class="mt-6 flex flex-col gap-5">
+      <div class="grid gap-5 sm:grid-cols-2">
+        <tf-field label="Tiêu đề" [required]="true" for="r-title">
+          <input id="r-title" tfInput formControlName="title" placeholder="Bảng chữ cái tiếng Pháp" />
+        </tf-field>
+        <tf-field label="Danh mục" for="r-cat">
+          <input id="r-cat" tfInput formControlName="category" placeholder="Ngữ pháp, Từ vựng..." />
+        </tf-field>
       </div>
-
-      <tf-file-upload
-        *ngIf="sourceMode === 'upload'"
-        label="Tệp tài liệu"
-        hint="File được lưu trên máy chủ của trung tâm và chỉ người có quyền mới tải được."
-        (fileChange)="onFileUploaded($event)"
-      ></tf-file-upload>
-
-      <tf-field
-        *ngIf="sourceMode === 'link'"
-        label="URL tài liệu"
-        for="r-url"
-        hint="Google Drive, YouTube, link PDF... Lưu ý: quyền truy cập do bên đó quyết định, không phải hệ thống này."
-      >
-        <input id="r-url" tfInput formControlName="fileUrl" placeholder="https://..." />
+      <tf-field label="Mô tả" for="r-desc">
+        <textarea id="r-desc" tfInput formControlName="description" rows="2"
+        placeholder="Video học bảng chữ cái và cách phát âm"></textarea>
       </tf-field>
+      <!-- Source: upload into the centre's own storage, or point at a link.
+      Uploading is first because it is the option that keeps the material
+      behind the access check. -->
+      <div class="flex flex-col gap-4">
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="setSourceMode('upload')"
+            class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            [ngClass]="sourceMode === 'upload' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+            >
+            <lucide-icon name="upload" class="h-4 w-4"></lucide-icon>
+            Tải file lên
+          </button>
+          <button
+            type="button"
+            (click)="setSourceMode('link')"
+            class="flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            [ngClass]="sourceMode === 'link' ? 'bg-primary text-white' : 'bg-muted text-ink-muted hover:bg-line hover:text-ink'"
+            >
+            <lucide-icon name="link" class="h-4 w-4"></lucide-icon>
+            Dán link ngoài
+          </button>
+        </div>
+        @if (sourceMode === 'upload') {
+          <tf-file-upload
+            label="Tệp tài liệu"
+            hint="File được lưu trên máy chủ của trung tâm và chỉ người có quyền mới tải được."
+            (fileChange)="onFileUploaded($event)"
+          ></tf-file-upload>
+        }
+        @if (sourceMode === 'link') {
+          <tf-field
+            label="URL tài liệu"
+            for="r-url"
+            hint="Google Drive, YouTube, link PDF... Lưu ý: quyền truy cập do bên đó quyết định, không phải hệ thống này."
+            >
+            <input id="r-url" tfInput formControlName="fileUrl" placeholder="https://..." />
+          </tf-field>
+        }
+      </div>
+      <!-- Flat checkbox: a solid block that fills when checked -->
+      <label class="flex cursor-pointer items-center gap-3 rounded-md bg-muted p-4 transition-colors duration-200 hover:bg-line">
+        <input type="checkbox" formControlName="isPublic"
+          class="h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-line text-primary focus:ring-primary" />
+          <span class="font-semibold text-ink-soft">Công khai — tất cả học viên đều thấy tài liệu này</span>
+        </label>
+        <div class="flex flex-wrap justify-end gap-3">
+          <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
+          <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || !hasSource || saving">
+            {{ saving ? 'Đang lưu...' : 'Thêm tài liệu' }}
+          </button>
+        </div>
+      </form>
     </div>
+  }
 
-    <!-- Flat checkbox: a solid block that fills when checked -->
-    <label class="flex cursor-pointer items-center gap-3 rounded-md bg-muted p-4 transition-colors duration-200 hover:bg-line">
-      <input type="checkbox" formControlName="isPublic"
-             class="h-5 w-5 shrink-0 cursor-pointer rounded border-2 border-line text-primary focus:ring-primary" />
-      <span class="font-semibold text-ink-soft">Công khai — tất cả học viên đều thấy tài liệu này</span>
-    </label>
-
-    <div class="flex flex-wrap justify-end gap-3">
-      <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
-      <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || !hasSource || saving">
-        {{ saving ? 'Đang lưu...' : 'Thêm tài liệu' }}
+  <!-- ══ CATEGORY FILTER ═════════════════════════════════════════════════════ -->
+  @if (categories.length) {
+    <div class="mb-8 flex flex-wrap gap-2">
+      <button
+        type="button"
+        (click)="filterCategory(null)"
+        class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+        [ngClass]="!activeCategory ? 'bg-ink text-white' : 'bg-white text-ink-muted hover:bg-line hover:text-ink'"
+        >
+        Tất cả
       </button>
+      @for (cat of categories; track cat) {
+        <button
+          type="button"
+          (click)="filterCategory(cat)"
+          class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+          [ngClass]="activeCategory === cat ? 'bg-primary text-white' : 'bg-white text-ink-muted hover:bg-line hover:text-ink'"
+          >
+          {{ cat }}
+        </button>
+      }
     </div>
-  </form>
-</div>
+  }
 
-<!-- ══ CATEGORY FILTER ═════════════════════════════════════════════════════ -->
-<div *ngIf="categories.length" class="mb-8 flex flex-wrap gap-2">
-  <button
-    type="button"
-    (click)="filterCategory(null)"
-    class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-    [ngClass]="!activeCategory ? 'bg-ink text-white' : 'bg-white text-ink-muted hover:bg-line hover:text-ink'"
-  >
-    Tất cả
-  </button>
-  <button
-    *ngFor="let cat of categories"
-    type="button"
-    (click)="filterCategory(cat)"
-    class="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all duration-200"
-    [ngClass]="activeCategory === cat ? 'bg-primary text-white' : 'bg-white text-ink-muted hover:bg-line hover:text-ink'"
-  >
-    {{ cat }}
-  </button>
-</div>
+  @if (loading) {
+    <tf-spinner size="md" label="Đang tải tài liệu..."></tf-spinner>
+  }
 
-<tf-spinner *ngIf="loading" size="md" label="Đang tải tài liệu..."></tf-spinner>
-
-<!-- ══ GRID ════════════════════════════════════════════════════════════════ -->
-<div *ngIf="!loading">
-  <div *ngIf="filtered.length" class="grid gap-5 lg:grid-cols-2">
-    <div *ngFor="let r of filtered" tfCard tone="white" padding="lg" class="flex gap-5">
-      <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full" [ngClass]="kindOf(r).chip">
-        <lucide-icon [name]="kindOf(r).icon" class="h-7 w-7" [strokeWidth]="2.5"></lucide-icon>
-      </span>
-
-      <div class="min-w-0 flex-1">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="flex flex-wrap gap-2">
-              <span *ngIf="r.category" tfBadge tone="primary-soft" [square]="true">{{ r.category }}</span>
-              <span *ngIf="r.isPublic" tfBadge tone="secondary-soft" [square]="true">Công khai</span>
+  <!-- ══ GRID ════════════════════════════════════════════════════════════════ -->
+  @if (!loading) {
+    <div>
+      @if (filtered.length) {
+        <div class="grid gap-5 lg:grid-cols-2">
+          @for (r of filtered; track r) {
+            <div tfCard tone="white" padding="lg" class="flex gap-5">
+              <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full" [ngClass]="kindOf(r).chip">
+                <lucide-icon [name]="kindOf(r).icon" class="h-7 w-7" [strokeWidth]="2.5"></lucide-icon>
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap gap-2">
+                      @if (r.category) {
+                        <span tfBadge tone="primary-soft" [square]="true">{{ r.category }}</span>
+                      }
+                      @if (r.isPublic) {
+                        <span tfBadge tone="secondary-soft" [square]="true">Công khai</span>
+                      }
+                    </div>
+                    <h3 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ r.title }}</h3>
+                    @if (r.description) {
+                      <p class="mt-2 line-clamp-2 text-ink-muted">{{ r.description }}</p>
+                    }
+                  </div>
+                  @if (canManage) {
+                    <button
+                      type="button"
+                      (click)="onDelete(r.id)"
+                      tfButton variant="ghost" size="icon"
+                      class="shrink-0 !text-danger hover:!bg-danger-soft"
+                      aria-label="Xoá tài liệu"
+                      >
+                      <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+                    </button>
+                  }
+                </div>
+                <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t-2 border-muted pt-5">
+                  <span class="flex items-center gap-1.5 text-sm text-ink-muted">
+                    <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ r.uploadedBy }}
+                  </span>
+                  <span class="flex items-center gap-1.5 text-sm text-ink-muted">
+                    <lucide-icon name="calendar" class="h-4 w-4"></lucide-icon>{{ r.createdAt | date: 'dd/MM/yy' }}
+                  </span>
+                  <!-- A stored file needs the bearer token, so it is a button that
+                  fetches the blob; an external link is just a link. -->
+                  @if (r.file) {
+                    <button
+                      type="button"
+                      (click)="download(r)"
+                      [disabled]="downloadingId === r.id"
+                      tfButton variant="primary" size="sm" class="ml-auto"
+                      >
+                      <lucide-icon
+                        [name]="downloadingId === r.id ? 'loader-circle' : 'file-down'"
+                        class="h-4 w-4"
+                        [class.animate-spin-flat]="downloadingId === r.id"
+                      ></lucide-icon>
+                      {{ downloadingId === r.id ? 'Đang tải...' : 'Tải xuống' }}
+                    </button>
+                  }
+                  @if (!r.file && r.fileUrl) {
+                    <a
+                      [href]="r.fileUrl" target="_blank" rel="noopener"
+                      tfButton variant="primary" size="sm" class="ml-auto"
+                      >
+                      <lucide-icon name="external-link" class="h-4 w-4"></lucide-icon>
+                      Mở
+                    </a>
+                  }
+                </div>
+              </div>
             </div>
-            <h3 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ r.title }}</h3>
-            <p *ngIf="r.description" class="mt-2 line-clamp-2 text-ink-muted">{{ r.description }}</p>
-          </div>
-
-          <button
-            *ngIf="canManage"
-            type="button"
-            (click)="onDelete(r.id)"
-            tfButton variant="ghost" size="icon"
-            class="shrink-0 !text-danger hover:!bg-danger-soft"
-            aria-label="Xoá tài liệu"
-          >
-            <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
-          </button>
+          }
         </div>
-
-        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t-2 border-muted pt-5">
-          <span class="flex items-center gap-1.5 text-sm text-ink-muted">
-            <lucide-icon name="user" class="h-4 w-4"></lucide-icon>{{ r.uploadedBy }}
-          </span>
-          <span class="flex items-center gap-1.5 text-sm text-ink-muted">
-            <lucide-icon name="calendar" class="h-4 w-4"></lucide-icon>{{ r.createdAt | date: 'dd/MM/yy' }}
-          </span>
-          <!-- A stored file needs the bearer token, so it is a button that
-               fetches the blob; an external link is just a link. -->
-          <button
-            *ngIf="r.file"
-            type="button"
-            (click)="download(r)"
-            [disabled]="downloadingId === r.id"
-            tfButton variant="primary" size="sm" class="ml-auto"
-          >
-            <lucide-icon
-              [name]="downloadingId === r.id ? 'loader-circle' : 'file-down'"
-              class="h-4 w-4"
-              [class.animate-spin-flat]="downloadingId === r.id"
-            ></lucide-icon>
-            {{ downloadingId === r.id ? 'Đang tải...' : 'Tải xuống' }}
-          </button>
-
-          <a
-            *ngIf="!r.file && r.fileUrl"
-            [href]="r.fileUrl" target="_blank" rel="noopener"
-            tfButton variant="primary" size="sm" class="ml-auto"
-          >
-            <lucide-icon name="external-link" class="h-4 w-4"></lucide-icon>
-            Mở
-          </a>
-        </div>
-      </div>
+      }
+      @if (!filtered.length) {
+        <tf-empty-state
+          icon="folder-open"
+          title="Chưa có tài liệu nào"
+          [description]="activeCategory ? 'Không có tài liệu trong danh mục này.' : 'Tài liệu sẽ xuất hiện khi giáo viên tải lên.'"
+        ></tf-empty-state>
+      }
     </div>
-  </div>
-
-  <tf-empty-state
-    *ngIf="!filtered.length"
-    icon="folder-open"
-    title="Chưa có tài liệu nào"
-    [description]="activeCategory ? 'Không có tài liệu trong danh mục này.' : 'Tài liệu sẽ xuất hiện khi giáo viên tải lên.'"
-  ></tf-empty-state>
-</div>
+  }

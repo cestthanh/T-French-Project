@@ -3,10 +3,12 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProfileService } from 'src/app/services/profileService';
 import { UserProfile } from 'src/app/interface';
 import { ToastService } from 'src/app/services/share/toastService';
+import { AuthService } from 'src/app/services/authService';
 
 @Component({
-  selector: 'app-profile',
-  templateUrl: './profile.html',
+    selector: 'app-profile',
+    templateUrl: './profile.html',
+    standalone: false
 })
 export class Profile implements OnInit {
   profile: UserProfile | null = null;
@@ -27,6 +29,7 @@ export class Profile implements OnInit {
 
   constructor(
     private profileService: ProfileService,
+    private auth: AuthService,
     private fb: FormBuilder,
     private toast: ToastService,
   ) {
@@ -39,7 +42,7 @@ export class Profile implements OnInit {
     this.pwForm = this.fb.group(
       {
         currentPassword: ['', Validators.required],
-        newPassword: ['', [Validators.required, Validators.minLength(6)]],
+        newPassword: ['', [Validators.required, Validators.minLength(8)]],
         confirmPassword: ['', Validators.required],
       },
       { validators: this.matchPasswords },
@@ -71,6 +74,7 @@ export class Profile implements OnInit {
       next: res => {
         this.profileSaving = false;
         this.profile = { ...this.profile!, ...res };
+        this.auth.updateCurrentUser({ fullName: res.fullName, avatarUrl: res.avatarUrl });
         this.toast.success('Đã lưu thông tin!');
       },
       error: () => {

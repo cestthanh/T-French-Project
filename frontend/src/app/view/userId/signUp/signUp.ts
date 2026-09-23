@@ -4,8 +4,9 @@ import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/authService';
 
 @Component({
-  selector: 'app-register',
-  templateUrl: './signUp.html',
+    selector: 'app-register',
+    templateUrl: './signUp.html',
+    standalone: false
 })
 export class SignUp {
   form: FormGroup;
@@ -24,7 +25,7 @@ export class SignUp {
       fullName: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       phoneNumber: [''],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
     });
   }
 

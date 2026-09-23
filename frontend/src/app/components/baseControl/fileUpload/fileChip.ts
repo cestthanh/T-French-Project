@@ -11,8 +11,9 @@ import { ToastService } from 'src/app/services/share/toastService';
  * token — see `FileService.download()`.
  */
 @Component({
-  selector: 'tf-file-chip',
-  templateUrl: './fileChip.html',
+    selector: 'tf-file-chip',
+    templateUrl: './fileChip.html',
+    standalone: false
 })
 export class BaseFileChip {
   /** An uploaded file. Mutually exclusive with `url`. */

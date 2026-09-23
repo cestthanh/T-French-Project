@@ -7,8 +7,9 @@ import { Component, Input } from '@angular/core';
  * flat design system rejects. Labels are static, uppercase, and above the field.
  */
 @Component({
-  selector: 'tf-field',
-  templateUrl: './field.html',
+    selector: 'tf-field',
+    templateUrl: './field.html',
+    standalone: false
 })
 export class BaseField {
   @Input() label?: string;

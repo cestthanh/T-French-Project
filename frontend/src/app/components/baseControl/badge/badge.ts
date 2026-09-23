@@ -8,7 +8,8 @@ export type BadgeTone =
  * Tag / status pill. The one place a fully-rounded shape is allowed by the spec.
  */
 @Directive({
-  selector: '[tfBadge]',
+    selector: '[tfBadge]',
+    standalone: false
 })
 export class BaseBadge {
   @Input() tone: BadgeTone = 'muted';

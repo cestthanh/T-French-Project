@@ -7,3 +7,5 @@ export * from './booking';
 export * from './blog';
 export * from './admin';
 export * from './lead';
+export * from './classManagement';
+export * from './quiz';

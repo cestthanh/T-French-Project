@@ -8,8 +8,9 @@ import { BaseTab } from './tab';
  * equivalent of Material's animated ink bar, with no elevation involved.
  */
 @Component({
-  selector: 'tf-tabs',
-  templateUrl: './tabs.html',
+    selector: 'tf-tabs',
+    templateUrl: './tabs.html',
+    standalone: false
 })
 export class BaseTabs implements AfterContentInit {
   @ContentChildren(BaseTab) private tabQuery!: QueryList<BaseTab>;

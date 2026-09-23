@@ -23,6 +23,7 @@ public class Course
 
     // Navigation
     public ICollection<Enrollment> Enrollments { get; set; } = [];
+    public ICollection<CourseClass> Classes { get; set; } = [];
     public ICollection<Assignment> Assignments { get; set; } = [];
     public ICollection<Resource> Resources { get; set; } = [];
     public ICollection<BookingSlot> BookingSlots { get; set; } = [];

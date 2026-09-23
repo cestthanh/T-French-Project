@@ -18,7 +18,7 @@ public class BookingsController(AppDbContext db) : ControllerBase
 
     // ── GET available slots (Student: all unbooked; Teacher: own slots) ────────
     [HttpGet]
-    public async Task<IActionResult> GetSlots([FromQuery] bool mySlots = false)
+    public async Task<IActionResult> GetSlots()
     {
         var query = db.BookingSlots
             .Include(s => s.Teacher)
@@ -26,7 +26,7 @@ public class BookingsController(AppDbContext db) : ControllerBase
             .Include(s => s.Course)
             .AsQueryable();
 
-        if (CurrentRole == "Teacher" || mySlots)
+        if (CurrentRole == "Teacher")
         {
             // Teacher sees only their own slots
             query = query.Where(s => s.TeacherId == CurrentUserId);
@@ -56,11 +56,18 @@ public class BookingsController(AppDbContext db) : ControllerBase
 
     // ── CREATE slot (Teacher only) ────────────────────────────────────────────
     [HttpPost]
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "Teacher")]
     public async Task<IActionResult> CreateSlot([FromBody] CreateSlotDto dto)
     {
         if (dto.StartTime >= dto.EndTime)
             return BadRequest(new { message = "Giờ bắt đầu phải trước giờ kết thúc." });
+        if (dto.StartTime <= DateTime.UtcNow)
+            return BadRequest(new { message = "Không thể tạo slot trong quá khứ." });
+
+        var ownsCourse = await db.Courses.AnyAsync(c =>
+            c.Id == dto.CourseId && c.TeacherId == CurrentUserId);
+        if (!ownsCourse)
+            return BadRequest(new { message = "Khoá học không tồn tại hoặc không thuộc giáo viên hiện tại." });
 
         // Check for overlapping slots for the same teacher
         var overlap = await db.BookingSlots.AnyAsync(s =>
@@ -92,6 +99,13 @@ public class BookingsController(AppDbContext db) : ControllerBase
         var slot = await db.BookingSlots.FindAsync(id);
         if (slot == null) return NotFound();
         if (slot.IsBooked) return Conflict(new { message = "Slot này đã được đặt." });
+        if (slot.StartTime <= DateTime.UtcNow)
+            return Conflict(new { message = "Slot này đã bắt đầu hoặc đã qua." });
+
+        var enrolled = await db.Enrollments.AnyAsync(e =>
+            e.CourseId == slot.CourseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
+        if (!enrolled)
+            return Forbid();
 
         // Prevent double-booking: student can't book overlapping slots
         var studentOverlap = await db.BookingSlots.AnyAsync(s =>
@@ -103,9 +117,17 @@ public class BookingsController(AppDbContext db) : ControllerBase
         if (studentOverlap)
             return Conflict(new { message = "Bạn đã có lịch trùng giờ này." });
 
-        slot.StudentId = CurrentUserId;
-        slot.IsBooked = true;
-        await db.SaveChangesAsync();
+        // Claim the slot atomically. If another request booked it after the
+        // checks above, no row is changed and this caller gets a conflict.
+        var updated = await db.BookingSlots
+            .Where(s => s.Id == id && !s.IsBooked)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(s => s.StudentId, CurrentUserId)
+                .SetProperty(s => s.IsBooked, true));
+
+        if (updated == 0)
+            return Conflict(new { message = "Slot này vừa được người khác đặt." });
+
         return Ok(new { message = "Đặt lịch thành công!", slot.Id, slot.StartTime, slot.EndTime });
     }
 

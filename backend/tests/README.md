@@ -1,5 +1,19 @@
 # API smoke tests
 
+The repository also contains self-hosted .NET integration tests for the newer
+Course/Class/Enrollment and Quiz workflows. They create an isolated temporary
+SQLite database, start the API in memory, and require no separately running
+server:
+
+```bash
+cd backend
+dotnet test TFrench.sln
+```
+
+These tests cover free/paid enrollment, lead conversion, one-attempt quiz
+creation and submission, answer secrecy, optimistic autosave versioning,
+automatic deadline submission, automatic objective grading, and manual essay grading.
+
 End-to-end checks against a **running** API. They log in as the seeded accounts,
 make real HTTP requests, and assert on status codes.
 

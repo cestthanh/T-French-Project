@@ -1,137 +1,152 @@
 <tf-page-header
   title="Bài tập"
   [subtitle]="canManage ? 'Quản lý bài tập theo khoá học' : 'Xem và nộp bài tập của bạn'"
->
-  <button *ngIf="canManage" type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
-    <lucide-icon [name]="showCreate ? 'x' : 'plus'" class="h-4 w-4"></lucide-icon>
-    {{ showCreate ? 'Đóng' : 'Tạo bài tập' }}
-  </button>
+  >
+  @if (canManage) {
+    <button type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
+      <lucide-icon [name]="showCreate ? 'x' : 'plus'" class="h-4 w-4"></lucide-icon>
+      {{ showCreate ? 'Đóng' : 'Tạo bài tập' }}
+    </button>
+  }
 </tf-page-header>
 
 <!-- ══ CREATE FORM ═════════════════════════════════════════════════════════ -->
-<div *ngIf="showCreate && canManage" tfCard tone="white" padding="lg" class="mb-8 animate-fade-up">
-  <h2 class="text-xl font-extrabold tracking-heading">Tạo bài tập mới</h2>
-
-  <form [formGroup]="createForm" (ngSubmit)="onCreate()" class="mt-6 flex flex-col gap-5">
-    <tf-field label="Tiêu đề" [required]="true" for="a-title">
-      <input id="a-title" tfInput formControlName="title" placeholder="Bài tập 1: Tự giới thiệu" />
-    </tf-field>
-
-    <tf-field label="Mô tả / Yêu cầu" for="a-desc">
-      <textarea id="a-desc" tfInput formControlName="description" rows="3"
-                placeholder="Viết đoạn văn 5–10 câu..."></textarea>
-    </tf-field>
-
-    <div class="grid gap-5 sm:grid-cols-2">
-      <tf-field label="Mã khoá học" [required]="true" for="a-course" hint="Course ID">
-        <input id="a-course" tfInput type="number" formControlName="courseId" placeholder="1" />
+@if (showCreate && canManage) {
+  <div tfCard tone="white" padding="lg" class="mb-8 animate-fade-up">
+    <h2 class="text-xl font-extrabold tracking-heading">Tạo bài tập mới</h2>
+    <form [formGroup]="createForm" (ngSubmit)="onCreate()" class="mt-6 flex flex-col gap-5">
+      <tf-field label="Tiêu đề" [required]="true" for="a-title">
+        <input id="a-title" tfInput formControlName="title" placeholder="Bài tập 1: Tự giới thiệu" />
       </tf-field>
-      <tf-field label="Hạn nộp" [required]="true" for="a-due">
-        <input id="a-due" tfInput type="datetime-local" formControlName="dueDate" />
+      <tf-field label="Mô tả / Yêu cầu" for="a-desc">
+        <textarea id="a-desc" tfInput formControlName="description" rows="3"
+        placeholder="Viết đoạn văn 5–10 câu..."></textarea>
       </tf-field>
-    </div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <tf-field label="Mã khoá học" [required]="true" for="a-course" hint="Course ID">
+          <input id="a-course" tfInput type="number" formControlName="courseId" placeholder="1" />
+        </tf-field>
+        <tf-field label="Hạn nộp" [required]="true" for="a-due">
+          <input id="a-due" tfInput type="datetime-local" formControlName="dueDate" />
+        </tf-field>
+      </div>
+      <tf-file-upload
+        label="Đề bài đính kèm (tuỳ chọn)"
+        hint="Chỉ học viên đã ghi danh khoá học này tải được."
+        (fileChange)="onAttachmentUploaded($event)"
+      ></tf-file-upload>
+      <div class="flex flex-wrap justify-end gap-3">
+        <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
+        <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">
+          {{ saving ? 'Đang lưu...' : 'Tạo bài tập' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
 
-    <tf-file-upload
-      label="Đề bài đính kèm (tuỳ chọn)"
-      hint="Chỉ học viên đã ghi danh khoá học này tải được."
-      (fileChange)="onAttachmentUploaded($event)"
-    ></tf-file-upload>
-
-    <div class="flex flex-wrap justify-end gap-3">
-      <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
-      <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">
-        {{ saving ? 'Đang lưu...' : 'Tạo bài tập' }}
-      </button>
-    </div>
-  </form>
-</div>
-
-<tf-spinner *ngIf="loading" size="md" label="Đang tải bài tập..."></tf-spinner>
+@if (loading) {
+  <tf-spinner size="md" label="Đang tải bài tập..."></tf-spinner>
+}
 
 <!-- ══ LIST ════════════════════════════════════════════════════════════════ -->
-<div *ngIf="!loading">
-  <div *ngIf="assignments.length" class="grid gap-5 lg:grid-cols-2">
-    <div
-      *ngFor="let a of assignments"
-      tfCard
-      [tone]="isOverdue(a.dueDate) ? 'danger-soft' : 'white'"
-      padding="lg"
-    >
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-          <span tfBadge tone="primary-soft" [square]="true">{{ a.course }}</span>
-          <h3 class="mt-3 text-xl font-bold leading-snug tracking-heading">{{ a.title }}</h3>
-        </div>
-
-        <div *ngIf="canManage" class="flex shrink-0 gap-2">
-          <a [routerLink]="['/dashboard/assignments', a.id]" tfButton variant="ghost" size="icon" aria-label="Xem bài nộp">
-            <lucide-icon name="clipboard-check" class="h-5 w-5"></lucide-icon>
-          </a>
-          <button type="button" (click)="onDelete(a.id)" tfButton variant="ghost" size="icon"
-                  class="!text-danger hover:!bg-danger-soft" aria-label="Xoá bài tập">
-            <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
-          </button>
-        </div>
+@if (!loading) {
+  <div>
+    @if (assignments.length) {
+      <div class="grid gap-5 lg:grid-cols-2">
+        @for (a of assignments; track a) {
+          <div
+            tfCard
+            [tone]="isOverdue(a.dueDate) ? 'danger-soft' : 'white'"
+            padding="lg"
+            >
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <span tfBadge tone="primary-soft" [square]="true">{{ a.course }}</span>
+                <h3 class="mt-3 text-xl font-bold leading-snug tracking-heading">{{ a.title }}</h3>
+              </div>
+              @if (canManage) {
+                <div class="flex shrink-0 gap-2">
+                  <a [routerLink]="['/dashboard/assignments', a.id]" tfButton variant="ghost" size="icon" aria-label="Xem bài nộp">
+                    <lucide-icon name="clipboard-check" class="h-5 w-5"></lucide-icon>
+                  </a>
+                  <button type="button" (click)="onDelete(a.id)" tfButton variant="ghost" size="icon"
+                    class="!text-danger hover:!bg-danger-soft" aria-label="Xoá bài tập">
+                    <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
+                  </button>
+                </div>
+              }
+            </div>
+            @if (a.description) {
+              <p class="mt-3 line-clamp-2 text-ink-muted">{{ a.description }}</p>
+            }
+            <div class="mt-5 flex flex-wrap items-center gap-3">
+              <span class="flex items-center gap-2 text-sm font-semibold"
+                [ngClass]="isOverdue(a.dueDate) ? 'text-danger' : 'text-ink-soft'">
+                <lucide-icon name="clock" class="h-4 w-4"></lucide-icon>
+                Hạn: {{ a.dueDate | date: 'dd/MM/yyyy HH:mm' }}
+              </span>
+              @if (isOverdue(a.dueDate)) {
+                <span tfBadge tone="danger">Đã quá hạn</span>
+              }
+            </div>
+            <div class="mt-6 flex items-center justify-between border-t-2 border-muted pt-5">
+              @if (canManage) {
+                <span class="flex items-center gap-2 text-sm font-semibold text-ink-muted">
+                  <lucide-icon name="users" class="h-4 w-4"></lucide-icon>
+                  {{ a.submissionCount }} bài nộp
+                </span>
+              }
+              @if (!canManage) {
+                <a [routerLink]="['/dashboard/assignments', a.id]"
+                  tfButton variant="primary" size="sm" class="ml-auto">
+                  Xem &amp; Nộp bài
+                  <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
+                </a>
+              }
+            </div>
+          </div>
+        }
       </div>
-
-      <p *ngIf="a.description" class="mt-3 line-clamp-2 text-ink-muted">{{ a.description }}</p>
-
-      <div class="mt-5 flex flex-wrap items-center gap-3">
-        <span class="flex items-center gap-2 text-sm font-semibold"
-              [ngClass]="isOverdue(a.dueDate) ? 'text-danger' : 'text-ink-soft'">
-          <lucide-icon name="clock" class="h-4 w-4"></lucide-icon>
-          Hạn: {{ a.dueDate | date: 'dd/MM/yyyy HH:mm' }}
-        </span>
-        <span *ngIf="isOverdue(a.dueDate)" tfBadge tone="danger">Đã quá hạn</span>
-      </div>
-
-      <div class="mt-6 flex items-center justify-between border-t-2 border-muted pt-5">
-        <span *ngIf="canManage" class="flex items-center gap-2 text-sm font-semibold text-ink-muted">
-          <lucide-icon name="users" class="h-4 w-4"></lucide-icon>
-          {{ a.submissionCount }} bài nộp
-        </span>
-        <a *ngIf="!canManage" [routerLink]="['/dashboard/assignments', a.id]"
-           tfButton variant="primary" size="sm" class="ml-auto">
-          Xem &amp; Nộp bài
-          <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
-        </a>
-      </div>
-    </div>
+    }
+    @if (!assignments.length) {
+      <tf-empty-state
+        icon="clipboard-list"
+        title="Chưa có bài tập nào"
+        [description]="canManage ? 'Tạo bài tập đầu tiên cho khoá học của bạn.' : 'Giáo viên chưa giao bài tập nào.'"
+      ></tf-empty-state>
+    }
   </div>
-
-  <tf-empty-state
-    *ngIf="!assignments.length"
-    icon="clipboard-list"
-    title="Chưa có bài tập nào"
-    [description]="canManage ? 'Tạo bài tập đầu tiên cho khoá học của bạn.' : 'Giáo viên chưa giao bài tập nào.'"
-  ></tf-empty-state>
-</div>
+}
 
 <!-- ══ MY SUBMISSIONS ══════════════════════════════════════════════════════ -->
-<div *ngIf="!canManage && submissions.length" class="mt-12">
-  <p class="eyebrow text-ink-muted">Bài đã nộp của bạn</p>
-
-  <div class="mt-5 grid gap-5 lg:grid-cols-2">
-    <div *ngFor="let s of submissions" tfCard tone="white" padding="lg">
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-          <span tfBadge tone="primary-soft" [square]="true">{{ s.course }}</span>
-          <h4 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ s.assignment }}</h4>
+@if (!canManage && submissions.length) {
+  <div class="mt-12">
+    <p class="eyebrow text-ink-muted">Bài đã nộp của bạn</p>
+    <div class="mt-5 grid gap-5 lg:grid-cols-2">
+      @for (s of submissions; track s) {
+        <div tfCard tone="white" padding="lg">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <span tfBadge tone="primary-soft" [square]="true">{{ s.course }}</span>
+              <h4 class="mt-3 text-lg font-bold leading-snug tracking-heading">{{ s.assignment }}</h4>
+            </div>
+            <span tfBadge [tone]="s.grade != null ? 'success' : 'muted'" [square]="true" class="shrink-0">
+              {{ s.grade != null ? s.grade + '/10' : 'Chờ chấm' }}
+            </span>
+          </div>
+          <p class="mt-4 flex items-center gap-2 text-sm text-ink-muted">
+            <lucide-icon name="send" class="h-4 w-4"></lucide-icon>
+            Đã nộp: {{ s.submittedAt | date: 'dd/MM/yyyy HH:mm' }}
+          </p>
+          @if (s.feedback) {
+            <div class="mt-4 flex items-start gap-3 rounded-md bg-muted p-4">
+              <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
+              <p class="text-ink-soft">{{ s.feedback }}</p>
+            </div>
+          }
         </div>
-        <span tfBadge [tone]="s.grade != null ? 'success' : 'muted'" [square]="true" class="shrink-0">
-          {{ s.grade != null ? s.grade + '/10' : 'Chờ chấm' }}
-        </span>
-      </div>
-
-      <p class="mt-4 flex items-center gap-2 text-sm text-ink-muted">
-        <lucide-icon name="send" class="h-4 w-4"></lucide-icon>
-        Đã nộp: {{ s.submittedAt | date: 'dd/MM/yyyy HH:mm' }}
-      </p>
-
-      <div *ngIf="s.feedback" class="mt-4 flex items-start gap-3 rounded-md bg-muted p-4">
-        <lucide-icon name="message-square" class="mt-0.5 h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
-        <p class="text-ink-soft">{{ s.feedback }}</p>
-      </div>
+      }
     </div>
   </div>
-</div>
+}

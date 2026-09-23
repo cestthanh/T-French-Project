@@ -9,6 +9,8 @@ export const apiUrl = environment.apiUrl;
 export const uriConfig = {
   AUTH: apiUrl + '/auth/',
   COURSE: apiUrl + '/courses',
+  CLASS: apiUrl + '/classes',
+  QUIZ: apiUrl + '/quizzes',
   ASSIGNMENT: apiUrl + '/assignments',
   RESOURCE: apiUrl + '/resources',
   BOOKING: apiUrl + '/bookings',

@@ -17,7 +17,8 @@ export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl' | 'icon';
  * scanner can find them.
  */
 @Directive({
-  selector: 'button[tfButton], a[tfButton]',
+    selector: 'button[tfButton], a[tfButton]',
+    standalone: false
 })
 export class BaseButton {
   @Input() variant: ButtonVariant = 'primary';

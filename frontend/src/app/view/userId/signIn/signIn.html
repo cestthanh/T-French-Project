@@ -18,12 +18,14 @@
     </div>
 
     <ul class="relative space-y-4">
-      <li *ngFor="let perk of perks" class="flex items-center gap-4 text-white/90">
-        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15">
-          <lucide-icon [name]="perk.icon" class="h-5 w-5 text-accent" [strokeWidth]="2.5"></lucide-icon>
-        </span>
-        <span class="font-semibold">{{ perk.label }}</span>
-      </li>
+      @for (perk of perks; track perk) {
+        <li class="flex items-center gap-4 text-white/90">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15">
+            <lucide-icon [name]="perk.icon" class="h-5 w-5 text-accent" [strokeWidth]="2.5"></lucide-icon>
+          </span>
+          <span class="font-semibold">{{ perk.label }}</span>
+        </li>
+      }
     </ul>
   </aside>
 
@@ -39,35 +41,39 @@
       <p class="mt-3 text-ink-muted">Nhập thông tin tài khoản để tiếp tục.</p>
 
       <!-- Error block: solid fill, no shadow -->
-      <div *ngIf="error" class="mt-8 flex items-start gap-3 rounded-md bg-danger-soft p-4">
-        <lucide-icon name="circle-alert" class="mt-0.5 h-5 w-5 shrink-0 text-danger" [strokeWidth]="2.5"></lucide-icon>
-        <p class="font-medium text-danger-dark">{{ error }}</p>
-      </div>
+      @if (error) {
+        <div class="mt-8 flex items-start gap-3 rounded-md bg-danger-soft p-4">
+          <lucide-icon name="circle-alert" class="mt-0.5 h-5 w-5 shrink-0 text-danger" [strokeWidth]="2.5"></lucide-icon>
+          <p class="font-medium text-danger-dark">{{ error }}</p>
+        </div>
+      }
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-8 flex flex-col gap-5">
         <tf-field label="Email" [required]="true" for="login-email"
-                  [error]="showError('email') ? 'Email không hợp lệ.' : null">
+          [error]="showError('email') ? 'Email không hợp lệ.' : null">
           <input id="login-email" tfInput type="email" formControlName="email"
-                 placeholder="you@example.com" autocomplete="email"
-                 [invalid]="showError('email')" />
+            placeholder="you@example.com" autocomplete="email"
+            [invalid]="showError('email')" />
         </tf-field>
 
         <tf-field label="Mật khẩu" [required]="true" for="login-password"
-                  [error]="showError('password') ? 'Mật khẩu tối thiểu 6 ký tự.' : null">
+          [error]="showError('password') ? 'Mật khẩu tối thiểu 6 ký tự.' : null">
           <div class="relative">
             <input id="login-password" tfInput [type]="showPass ? 'text' : 'password'"
-                   formControlName="password" placeholder="••••••••" autocomplete="current-password"
-                   class="!pr-14" [invalid]="showError('password')" />
+              formControlName="password" placeholder="••••••••" autocomplete="current-password"
+              class="!pr-14" [invalid]="showError('password')" />
             <button type="button" (click)="showPass = !showPass"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted transition-transform duration-200 hover:scale-110 hover:text-ink"
-                    [attr.aria-label]="showPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
+              class="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted transition-transform duration-200 hover:scale-110 hover:text-ink"
+              [attr.aria-label]="showPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'">
               <lucide-icon [name]="showPass ? 'eye-off' : 'eye'" class="h-5 w-5"></lucide-icon>
             </button>
           </div>
         </tf-field>
 
         <button type="submit" tfButton variant="primary" size="lg" [block]="true" [disabled]="loading" class="mt-3">
-          <lucide-icon *ngIf="loading" name="loader-circle" class="h-5 w-5 animate-spin-flat"></lucide-icon>
+          @if (loading) {
+            <lucide-icon name="loader-circle" class="h-5 w-5 animate-spin-flat"></lucide-icon>
+          }
           {{ loading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
         </button>
       </form>
@@ -78,19 +84,23 @@
       </p>
 
       <!-- Demo accounts — seeded by the API's DataSeeder -->
-      <div class="mt-10 rounded-lg bg-muted p-6">
-        <p class="eyebrow text-ink-muted">Tài khoản demo</p>
-        <div class="mt-4 flex flex-col gap-2">
-          <button *ngFor="let account of demoAccounts" type="button" (click)="fillDemo(account)"
-                  class="flex items-center justify-between gap-4 rounded-md bg-white px-4 py-3 text-left transition-all duration-200 hover:scale-[1.02]">
-            <span class="flex items-center gap-3">
-              <span tfBadge [tone]="account.tone" [square]="true">{{ account.role }}</span>
-              <span class="text-sm font-medium text-ink-soft">{{ account.email }}</span>
-            </span>
-            <lucide-icon name="arrow-right" class="h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
-          </button>
+      @if (showDemoAccounts) {
+        <div class="mt-10 rounded-lg bg-muted p-6">
+          <p class="eyebrow text-ink-muted">Tài khoản demo</p>
+          <div class="mt-4 flex flex-col gap-2">
+            @for (account of demoAccounts; track account) {
+              <button type="button" (click)="fillDemo(account)"
+                class="flex items-center justify-between gap-4 rounded-md bg-white px-4 py-3 text-left transition-all duration-200 hover:scale-[1.02]">
+                <span class="flex items-center gap-3">
+                  <span tfBadge [tone]="account.tone" [square]="true">{{ account.role }}</span>
+                  <span class="text-sm font-medium text-ink-soft">{{ account.email }}</span>
+                </span>
+                <lucide-icon name="arrow-right" class="h-4 w-4 shrink-0 text-ink-muted"></lucide-icon>
+              </button>
+            }
+          </div>
         </div>
-      </div>
+      }
     </div>
   </main>
 </div>

@@ -45,10 +45,19 @@ public class Enrollment
     public int CourseId { get; set; }
     public Course? Course { get; set; }
 
+    /// <summary>The concrete cohort. Nullable only while legacy course-level
+    /// enrolments are backfilled by the migration/seed process.</summary>
+    public int? ClassId { get; set; }
+    public CourseClass? Class { get; set; }
+
     public int StudentId { get; set; }
     public User? Student { get; set; }
 
     public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
+    public EnrollmentStatus Status { get; set; } = EnrollmentStatus.Active;
+
+    // Kept during the compatibility migration because the existing LMS queries
+    // use it. All new enrollment workflows update Status and IsActive together.
     public bool IsActive { get; set; } = true;
 }
 

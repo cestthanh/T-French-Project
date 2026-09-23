@@ -3,8 +3,9 @@ import { BlogService } from 'src/app/services/blogService';
 import { BlogPost } from 'src/app/interface';
 
 @Component({
-  selector: 'app-blog-list',
-  templateUrl: './blogList.html',
+    selector: 'app-blog-list',
+    templateUrl: './blogList.html',
+    standalone: false
 })
 export class BlogList implements OnInit {
   posts: BlogPost[] = [];

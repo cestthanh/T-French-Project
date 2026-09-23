@@ -7,8 +7,9 @@ import { AuthService } from 'src/app/services/authService';
 import { ToastService } from 'src/app/services/share/toastService';
 
 @Component({
-  selector: 'app-assignments-list',
-  templateUrl: './assignmentList.html',
+    selector: 'app-assignments-list',
+    templateUrl: './assignmentList.html',
+    standalone: false
 })
 export class AssignmentList implements OnInit {
   assignments: Assignment[] = [];

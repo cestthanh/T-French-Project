@@ -2,8 +2,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    /* Enables absolute imports rooted at the project, e.g.
-       `import { AuthService } from 'src/app/services/authService';` */
     "baseUrl": "./",
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist/out-tsc",
@@ -17,15 +15,11 @@
     "sourceMap": true,
     "declaration": false,
     "experimentalDecorators": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
     "module": "ES2022",
-    "useDefineForClassFields": false,
-    "lib": [
-      "ES2022",
-      "dom"
-    ]
+    "useDefineForClassFields": false
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

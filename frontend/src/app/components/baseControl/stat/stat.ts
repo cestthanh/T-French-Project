@@ -9,8 +9,9 @@ export type StatTone = 'primary' | 'secondary' | 'accent' | 'danger' | 'dark';
  * is what carries the visual interest here, since there is no card depth to use.
  */
 @Component({
-  selector: 'tf-stat',
-  templateUrl: './stat.html',
+    selector: 'tf-stat',
+    templateUrl: './stat.html',
+    standalone: false
 })
 export class BaseStat {
   @Input() icon = 'sparkles';

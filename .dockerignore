@@ -1,0 +1,16 @@
+.git
+.github
+.vs
+.idea
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/storage
+*.user
+*.suo
+DE_XUAT_PHAT_TRIEN_DU_AN.md

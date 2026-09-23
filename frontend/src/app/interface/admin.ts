@@ -17,6 +17,7 @@ export interface AdminUser {
   role: string;
   phoneNumber?: string;
   avatarUrl?: string;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -49,6 +50,17 @@ export interface CreateBlogPostRequest {
   tags?: string;
   coverImageUrl?: string;
   isPublished: boolean;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  metadataJson?: string;
+  ipAddress?: string;
+  createdAt: string;
+  actor?: string;
 }
 
 /**

@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TFrench.API.Data;
+using TFrench.API.Services;
 
 namespace TFrench.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ProfileController(AppDbContext db) : ControllerBase
+public class ProfileController(AppDbContext db, AuditService audit) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -50,10 +51,11 @@ public class ProfileController(AppDbContext db) : ControllerBase
         if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
             return BadRequest(new { message = "Mật khẩu hiện tại không đúng." });
 
-        if (dto.NewPassword.Length < 6)
-            return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 6 ký tự." });
+        if (dto.NewPassword.Length < 8)
+            return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 8 ký tự." });
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        audit.Record("PasswordChanged", "User", user.Id);
         await db.SaveChangesAsync();
         return Ok(new { message = "Đổi mật khẩu thành công!" });
     }

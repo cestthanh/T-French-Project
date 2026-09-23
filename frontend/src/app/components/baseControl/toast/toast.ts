@@ -3,8 +3,9 @@ import { Toast, ToastService, ToastTone } from 'src/app/services/share/toastServ
 
 /** Renders the queue held by `ToastService`. Mounted once, in the app shell. */
 @Component({
-  selector: 'tf-toast-container',
-  templateUrl: './toast.html',
+    selector: 'tf-toast-container',
+    templateUrl: './toast.html',
+    standalone: false
 })
 export class BaseToast {
   readonly toasts$ = this.toastService.toasts$;

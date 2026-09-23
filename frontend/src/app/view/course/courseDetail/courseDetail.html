@@ -1,111 +1,163 @@
 <app-navbar></app-navbar>
 
-<ng-container *ngIf="course; else loadingTpl">
+@if (course) {
   <!-- ══ HERO ═════════════════════════════════════════════════════ Blue block -->
   <section tfSection tone="primary" [compact]="true">
-    <div
-      *ngIf="course.imageUrl"
-      class="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
-      [style.background-image]="'url(' + course.imageUrl + ')'"
-    ></div>
+    @if (course.imageUrl) {
+      <div
+        class="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
+        [style.background-image]="'url(' + course.imageUrl + ')'"
+      ></div>
+    }
     <span class="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-white/10"></span>
-
     <div class="container-tf relative">
-      <span *ngIf="course.level" tfBadge tone="accent" [square]="true">{{ course.level }}</span>
+      @if (course.level) {
+        <span tfBadge tone="accent" [square]="true">{{ course.level }}</span>
+      }
       <h1 class="mt-5 max-w-3xl text-4xl font-extrabold tracking-heading sm:text-5xl">{{ course.title }}</h1>
       <p class="mt-4 max-w-2xl text-lg text-white/80">{{ course.description }}</p>
-
       <div class="mt-8 flex flex-wrap gap-x-8 gap-y-3">
-        <span *ngFor="let m of meta" class="flex items-center gap-2 text-white/90">
-          <lucide-icon [name]="m.icon" class="h-5 w-5 text-accent" [strokeWidth]="2.5"></lucide-icon>
-          <span class="font-semibold">{{ m.value }}</span>
-        </span>
+        @for (m of meta; track m) {
+          <span class="flex items-center gap-2 text-white/90">
+            <lucide-icon [name]="m.icon" class="h-5 w-5 text-accent" [strokeWidth]="2.5"></lucide-icon>
+            <span class="font-semibold">{{ m.value }}</span>
+          </span>
+        }
       </div>
     </div>
   </section>
-
   <!-- ══ ACTION BAR ══════════════════════════════════════════════════════════ -->
   <div class="sticky top-20 z-[100] border-b-2 border-line bg-white">
     <div class="container-tf flex flex-wrap items-center justify-between gap-4 py-5">
       <span class="text-3xl font-extrabold tracking-heading"
-            [ngClass]="course.price > 0 ? 'text-primary' : 'text-success'">
+        [ngClass]="course.price > 0 ? 'text-primary' : 'text-success'">
         {{ course.price > 0 ? (course.price | number) + 'đ' : 'Miễn phí' }}
       </span>
-
       <div class="flex flex-wrap items-center gap-3">
         <a routerLink="/courses" tfButton variant="ghost" size="md">
           <lucide-icon name="arrow-left" class="h-4 w-4"></lucide-icon>
           Tất cả khoá học
         </a>
-
-        <a *ngIf="!auth.isLoggedIn" routerLink="/auth/register" tfButton variant="primary" size="md">
-          Đăng ký để học
-          <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
-        </a>
-
-        <span *ngIf="auth.isLoggedIn && course.isEnrolled" tfBadge tone="success-soft" [square]="true"
-              class="h-12 px-6 text-sm">
-          <lucide-icon name="circle-check" class="h-5 w-5" [strokeWidth]="2.5"></lucide-icon>
-          Đã đăng ký
-        </span>
-
-        <button
-          *ngIf="auth.isLoggedIn && !course.isEnrolled && auth.currentUser?.role === 'Student'"
-          type="button"
-          tfButton variant="primary" size="md"
-          [disabled]="enrolling"
-          (click)="onEnroll()"
-        >
-          {{ enrolling ? 'Đang đăng ký...' : 'Đăng ký khoá học' }}
-        </button>
-
-        <a
-          *ngIf="auth.isLoggedIn && auth.currentUser?.role !== 'Student'"
-          routerLink="/dashboard"
-          tfButton variant="accent" size="md"
-        >
-          <lucide-icon name="layout-dashboard" class="h-4 w-4"></lucide-icon>
-          Vào Dashboard
-        </a>
+        @if (!auth.isLoggedIn) {
+          <a routerLink="/auth/register" tfButton variant="primary" size="md">
+            Đăng ký để học
+            <lucide-icon name="arrow-right" class="h-4 w-4"></lucide-icon>
+          </a>
+        }
+        @if (auth.isLoggedIn && course.isEnrolled) {
+          <span tfBadge tone="success-soft" [square]="true"
+            class="h-12 px-6 text-sm">
+            <lucide-icon name="circle-check" class="h-5 w-5" [strokeWidth]="2.5"></lucide-icon>
+            Đã đăng ký
+          </span>
+        }
+        @if (auth.isLoggedIn && course.enrollmentStatus === 'Pending') {
+          <span tfBadge tone="accent-soft" [square]="true"
+            class="h-12 px-6 text-sm">
+            Đang chờ xác nhận
+          </span>
+        }
+        @if (auth.isLoggedIn && !course.isEnrolled && course.enrollmentStatus !== 'Pending' && auth.currentUser?.role === 'Student') {
+          <button
+            type="button"
+            tfButton variant="primary" size="md"
+            [disabled]="enrolling || !selectedClassId"
+            (click)="onEnroll()"
+            >
+            {{ enrolling ? 'Đang đăng ký...' : 'Đăng ký khoá học' }}
+          </button>
+        }
+        @if (auth.isLoggedIn && auth.currentUser?.role !== 'Student') {
+          <a
+            routerLink="/dashboard"
+            tfButton variant="accent" size="md"
+            >
+            <lucide-icon name="layout-dashboard" class="h-4 w-4"></lucide-icon>
+            Vào Dashboard
+          </a>
+        }
       </div>
     </div>
   </div>
-
+  @if (course.classes.length) {
+    <section tfSection tone="white" [compact]="true">
+      <div class="container-tf">
+        <tf-section-heading eyebrow="Lịch học" title="Chọn lớp đang mở"></tf-section-heading>
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          @for (item of course.classes; track item) {
+            <button
+              type="button"
+              class="rounded-xl border-2 p-5 text-left transition"
+              [ngClass]="selectedClassId === item.id ? 'border-primary bg-primary/5 shadow-sm' : 'border-line bg-white hover:border-primary/40'"
+              [disabled]="course.isEnrolled || course.enrollmentStatus === 'Pending'"
+              (click)="selectClass(item.id)"
+              >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="font-extrabold text-ink">{{ item.name }}</h3>
+                  <p class="mt-1 text-sm text-muted">Giảng viên: {{ item.teacher }}</p>
+                </div>
+                <span tfBadge tone="primary-soft" [square]="true">{{ item.modality }}</span>
+              </div>
+              <div class="mt-4 space-y-2 text-sm text-muted">
+                <p>Bắt đầu: <strong class="text-ink">{{ item.startDate | date:'dd/MM/yyyy' }}</strong></p>
+                @if (item.scheduleSummary) {
+                  <p>Lịch học: <strong class="text-ink">{{ item.scheduleSummary }}</strong></p>
+                }
+                <p>Sĩ số: <strong class="text-ink">{{ item.enrollmentCount }}/{{ item.capacity }}</strong></p>
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+  }
+  @if (auth.isLoggedIn && auth.currentUser?.role === 'Student' && !course.classes.length) {
+    <section tfSection tone="white" [compact]="true"
+      >
+      <div class="container-tf rounded-xl border-2 border-line bg-surface p-6 text-center text-muted">
+        Khoá học này hiện chưa có lớp mở đăng ký. Vui lòng quay lại sau.
+      </div>
+    </section>
+  }
   <!-- ══ WHAT YOU LEARN ══════════════════════════════════════════ Gray block -->
   <section tfSection tone="muted">
     <div class="container-tf">
       <tf-section-heading eyebrow="Nội dung" title="Bạn sẽ học được gì?"></tf-section-heading>
-
       <div class="grid gap-4 sm:grid-cols-2">
-        <div *ngFor="let outcome of outcomes" tfCard tone="white" padding="md" class="flex items-start gap-4">
-          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-success-soft">
-            <lucide-icon name="check" class="h-5 w-5 text-success" [strokeWidth]="3"></lucide-icon>
-          </span>
-          <p class="pt-2.5 font-semibold text-ink">{{ outcome }}</p>
-        </div>
+        @for (outcome of outcomes; track outcome) {
+          <div tfCard tone="white" padding="md" class="flex items-start gap-4">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-success-soft">
+              <lucide-icon name="check" class="h-5 w-5 text-success" [strokeWidth]="3"></lucide-icon>
+            </span>
+            <p class="pt-2.5 font-semibold text-ink">{{ outcome }}</p>
+          </div>
+        }
       </div>
     </div>
   </section>
-
   <!-- ══ CTA ══════════════════════════════════════════════════════ Amber block -->
-  <section tfSection tone="accent" [compact]="true" *ngIf="!course.isEnrolled">
-    <span class="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-white/20"></span>
-    <div class="container-tf relative flex flex-col items-center gap-6 text-center">
-      <h2 class="max-w-2xl text-3xl font-extrabold tracking-heading sm:text-4xl">
-        Bắt đầu khoá {{ course.title }} ngay hôm nay
-      </h2>
-      <a routerLink="/auth/register" tfButton variant="dark" size="lg" *ngIf="!auth.isLoggedIn">
-        Tạo tài khoản miễn phí
-        <lucide-icon name="arrow-right" class="h-5 w-5"></lucide-icon>
-      </a>
-    </div>
-  </section>
-</ng-container>
-
-<ng-template #loadingTpl>
+  @if (!course.isEnrolled && course.enrollmentStatus !== 'Pending') {
+    <section tfSection tone="accent" [compact]="true">
+      <span class="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-white/20"></span>
+      <div class="container-tf relative flex flex-col items-center gap-6 text-center">
+        <h2 class="max-w-2xl text-3xl font-extrabold tracking-heading sm:text-4xl">
+          Bắt đầu khoá {{ course.title }} ngay hôm nay
+        </h2>
+        @if (!auth.isLoggedIn) {
+          <a routerLink="/auth/register" tfButton variant="dark" size="lg">
+            Tạo tài khoản miễn phí
+            <lucide-icon name="arrow-right" class="h-5 w-5"></lucide-icon>
+          </a>
+        }
+      </div>
+    </section>
+  }
+} @else {
   <div class="flex min-h-[60vh] items-center justify-center">
     <tf-spinner size="lg" label="Đang tải thông tin khoá học..."></tf-spinner>
   </div>
-</ng-template>
+}
+
 
 <app-footer></app-footer>

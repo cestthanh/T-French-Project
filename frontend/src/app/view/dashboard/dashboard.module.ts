@@ -19,6 +19,8 @@ import { Dashboard } from './dashboard';
           { path: RouteSegment.assignments, loadChildren: () => import('../assignment/assignment.module').then(m => m.AssignmentModule) },
           { path: RouteSegment.resources, loadChildren: () => import('../resource/resource.module').then(m => m.ResourceModule) },
           { path: RouteSegment.bookings, loadChildren: () => import('../booking/booking.module').then(m => m.BookingModule) },
+          { path: RouteSegment.classes, loadChildren: () => import('../classManagement/classManagement.module').then(m => m.ClassManagementModule), data: { roles: [UserRole.Admin, UserRole.Teacher] } },
+          { path: RouteSegment.quizzes, loadChildren: () => import('../quiz/quiz.module').then(m => m.QuizModule) },
           { path: RouteSegment.admin, loadChildren: () => import('../admin/admin.module').then(m => m.AdminModule), data: { roles: [UserRole.Admin] } },
           { path: RouteSegment.profile, loadChildren: () => import('../profile/profile.module').then(m => m.ProfileModule) },
         ],

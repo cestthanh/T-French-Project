@@ -8,7 +8,8 @@ import { Directive, HostBinding, Input } from '@angular/core';
  * the field is focused.
  */
 @Directive({
-  selector: 'input[tfInput], textarea[tfInput], select[tfInput]',
+    selector: 'input[tfInput], textarea[tfInput], select[tfInput]',
+    standalone: false
 })
 export class BaseInput {
   /** Renders the error state: danger fill and border. */

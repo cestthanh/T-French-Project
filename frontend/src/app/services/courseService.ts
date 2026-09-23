@@ -20,8 +20,11 @@ export class CourseService {
     return this.http.get<any[]>(uriCourse.MY_COURSES);
   }
 
-  enroll(id: number): Observable<any> {
-    return this.http.post(uriCourse.ENROLL(id), {});
+  enroll(id: number, classId?: number): Observable<{ message: string; status: 'Active' | 'Pending' }> {
+    return this.http.post<{ message: string; status: 'Active' | 'Pending' }>(
+      uriCourse.ENROLL(id),
+      { classId },
+    );
   }
 
   create(data: CreateCourseRequest): Observable<Course> {
