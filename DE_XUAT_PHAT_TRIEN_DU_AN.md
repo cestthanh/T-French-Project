@@ -3,6 +3,8 @@
 > Tài liệu thảo luận và duyệt ý tưởng — chưa phải kế hoạch triển khai.
 >
 > Ngày đánh giá: 22/09/2026
+>
+> **Trạng thái hiện tại:** xem `docs/STATUS.md`. Các nhận định trong phần đánh giá ban đầu phản ánh thời điểm 22/09/2026; phụ lục D ghi những phần đã triển khai sau đó.
 
 ## 1. Kết luận và định hướng đề xuất
 
@@ -140,7 +142,7 @@ Mỗi bài học có thể có:
 
 ### 4.5. Quiz/Test online
 
-Phân hệ này **chưa tồn tại trong hệ thống hiện tại**. Assignment hiện chỉ cho học viên nộp file, link hoặc ghi chú rồi giáo viên chấm thủ công; không thể thay thế một bài kiểm tra làm trực tiếp trên web.
+Tại thời điểm đánh giá ban đầu, phân hệ này **chưa tồn tại**. Quiz/Test MVP đã được bổ sung ngày 22/09/2026; xem phụ lục D và `docs/STATUS.md` để biết phạm vi hiện tại.
 
 Nên xây Quiz/Test thành module riêng nhưng dùng chung Course/Class, deadline, gradebook và notification với LMS.
 
@@ -1156,7 +1158,7 @@ Giữ module, bổ sung validation + rate limit trước; sau đó mở rộng p
 
 #### Khoảng trống
 
-- Chưa có .NET test project.
+- Tại thời điểm đánh giá ban đầu chưa có .NET test project; hiện đã có `backend/TFrench.API.Tests/`.
 - Không có Angular unit/component test.
 - Không có browser E2E.
 - Auth, course, enrollment, assignment, booking, profile và admin chưa được phủ đủ.
@@ -1330,6 +1332,6 @@ Phạm vi còn lại của Giai đoạn 2 (Module/Lesson, gradebook/rubric nâng
 - [x] Xác minh production smoke test: frontend/SPA route `200`, health `200`, API không tồn tại `404`, Admin đăng nhập nhận JWT và lần khởi động sau không cần bootstrap password.
 - [x] Backend integration tests `4/4` pass và frontend production build thành công.
 - [x] Nâng Angular tuần tự từ 17 lên 21.2 LTS bằng migration chính thức; audit dependency production từ 8 cảnh báo xuống 0.
-- [x] Nâng các package ASP.NET Core/EF Core 9 lên patch 9.0.20 và IdentityModel 8.23; NuGet vulnerability audit không phát hiện package dễ tổn thương.
+- [x] Nâng backend và integration tests từ .NET 9 lên .NET 10 LTS; cập nhật ASP.NET Core/EF Core/Docker SDK/runtime lên 10.0.12 và NuGet vulnerability audit không phát hiện package dễ tổn thương.
 
 Còn cần chủ dự án thao tác trên tài khoản bên ngoài: push code lên GitHub, tạo Railway service, gắn volume `/data`, nhập secret, tạo domain và bật backup volume.

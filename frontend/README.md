@@ -1,27 +1,24 @@
-# Frontend
+# T-French frontend
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.17.
+Giao diện Angular 21 cho website công khai và dashboard theo vai trò. Trang public gồm home, khóa học, blog và đăng nhập/đăng ký; dashboard tải các module bài tập, tài liệu, booking, lớp học, quiz, admin và profile khi cần.
 
-## Development server
+## Chạy development
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Từ thư mục `frontend/`:
 
-## Code scaffolding
+```powershell
+npm ci
+npm start
+```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Mở `http://localhost:4200`. Backend development cần chạy tại `http://localhost:5083`; URL API được khai báo trong `src/environments/environment.ts`. Cấu hình production thay nó bằng `/api` cùng domain qua `src/environments/environment.production.ts`.
 
-## Build
+## Build và kiểm thử
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```powershell
+npm run build -- --configuration production
+```
 
-## Running unit tests
+Đầu ra nằm trong `dist/frontend/browser/` và được Dockerfile chép vào `wwwroot` của ASP.NET Core. `npm test` được cấu hình qua Karma trong `angular.json`, nhưng hiện chưa có file test `*.spec.ts` trong `src/`; không coi lệnh này là bằng chứng về độ phủ frontend.
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Xem [README gốc](../README.md) để chạy cả hệ thống và [trạng thái dự án](../docs/STATUS.md) để biết kết quả kiểm tra gần nhất.
