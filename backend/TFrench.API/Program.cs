@@ -93,7 +93,7 @@ if (!builder.Environment.IsDevelopment())
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
         // Railway is the only public entry point to the container, but its
         // internal proxy addresses are dynamic and cannot be enumerated here.
-        options.KnownNetworks.Clear();
+        options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
 }

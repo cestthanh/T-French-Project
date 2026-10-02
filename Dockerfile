@@ -7,7 +7,7 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build -- --configuration production
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS backend-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 WORKDIR /src
 COPY backend/TFrench.API/TFrench.API.csproj backend/TFrench.API/
 RUN dotnet restore backend/TFrench.API/TFrench.API.csproj
@@ -18,7 +18,7 @@ RUN dotnet publish backend/TFrench.API/TFrench.API.csproj \
     --output /app/publish \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 ENV ASPNETCORE_HTTP_PORTS=8080 \
