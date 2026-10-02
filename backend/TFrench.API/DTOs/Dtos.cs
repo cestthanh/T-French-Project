@@ -15,7 +15,7 @@ public record UserDto(int Id, string FullName, string Email, string Role, string
 // centre hosts itself. Both optional — an assignment may have no brief at all.
 public record CreateAssignmentDto(
     string Title, string? Description, DateTime DueDate, int CourseId,
-    string? AttachmentUrl = null, int? AttachmentId = null);
+    string? AttachmentUrl = null, int? AttachmentId = null, int? ClassId = null);
 
 public record SubmitAssignmentDto(int? FileId, string? FileUrl, string? Note);
 

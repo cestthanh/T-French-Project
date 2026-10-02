@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AssignmentService } from 'src/app/services/assignmentService';
-import { Assignment, Submission, UploadedFile } from 'src/app/interface';
+import { Assignment, ManagedClass, Submission, UploadedFile } from 'src/app/interface';
 import { AuthService } from 'src/app/services/authService';
+import { ClassService } from 'src/app/services/classService';
 
 import { ToastService } from 'src/app/services/share/toastService';
 
@@ -14,6 +15,7 @@ import { ToastService } from 'src/app/services/share/toastService';
 export class AssignmentList implements OnInit {
   assignments: Assignment[] = [];
   submissions: Submission[] = [];
+  classes: ManagedClass[] = [];
   loading = true;
   saving = false;
   showCreate = false;
@@ -31,11 +33,12 @@ export class AssignmentList implements OnInit {
     private assignmentService: AssignmentService,
     private fb: FormBuilder,
     private toast: ToastService,
+    private classService: ClassService,
   ) {
     this.createForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
-      courseId: [null, Validators.required],
+      classId: [null, Validators.required],
       dueDate: ['', Validators.required],
     });
   }
@@ -43,6 +46,10 @@ export class AssignmentList implements OnInit {
   ngOnInit(): void {
     this.load();
     if (!this.canManage) this.loadSubmissions();
+    else this.classService.getManaged().subscribe({
+      next: rows => (this.classes = rows),
+      error: () => this.toast.error('Không tải được danh sách lớp. Vui lòng thử lại.'),
+    });
   }
 
   load(): void {
@@ -65,10 +72,13 @@ export class AssignmentList implements OnInit {
   }
 
   onCreate(): void {
-    if (this.createForm.invalid) return;
+    if (this.createForm.invalid || this.saving) return;
+    const selectedClass = this.classes.find(c => c.id === this.createForm.value.classId);
+    if (!selectedClass) { this.toast.error('Vui lòng chọn lớp học.'); return; }
     this.saving = true;
     const dto = {
       ...this.createForm.value,
+      courseId: selectedClass.courseId,
       dueDate: new Date(this.createForm.value.dueDate).toISOString(),
       attachmentId: this.attachment?.id,
     };
@@ -81,9 +91,9 @@ export class AssignmentList implements OnInit {
         this.load();
         this.toast.success('Đã tạo bài tập!');
       },
-      error: () => {
+      error: err => {
         this.saving = false;
-        this.toast.error('Lỗi khi tạo bài tập.');
+        this.toast.error(err?.error?.message ?? 'Lỗi khi tạo bài tập.');
       },
     });
   }

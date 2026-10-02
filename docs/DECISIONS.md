@@ -13,6 +13,12 @@ Trang này giúp phiên mới phân biệt quyết định đã ghi nhận với
 
 Các dòng trên mô tả code hiện tại và những ô đã đánh dấu trong tài liệu đề xuất; không thay thế cho một đặc tả nghiệp vụ đầy đủ.
 
+## Quy tắc kỹ thuật của đợt nâng cấp 02/10/2026
+
+- Bài tập mới trên UI chọn lớp; tài liệu chọn lớp, khóa hoặc mọi tài khoản đăng nhập. API vẫn đọc nội dung cũ không có `ClassId` theo phạm vi khóa; migration không tự gán lớp cho dữ liệu lịch sử.
+- Nội dung theo lớp yêu cầu Enrollment Active đúng lớp. Quyền quản lý bài tập thuộc giáo viên lớp hoặc Admin; tài liệu vẫn do người tải lên hoặc Admin sửa/xóa.
+- API sửa thông thường không đổi lớp bài tập hoặc bỏ/đổi lớp đã gắn vào tài liệu, tránh client cũ làm rộng quyền do thiếu `ClassId`. Phân loại lại dữ liệu cũ và chính sách production cần xử lý riêng.
+
 ## Còn cần quyết định
 
 | Chủ đề | Câu hỏi cần chốt trước khi mở rộng |

@@ -25,6 +25,11 @@ public class Assignment
     public int CourseId { get; set; }
     public Course? Course { get; set; }
 
+    // Null keeps existing assignments available to every active class in the
+    // course. New teacher-facing forms choose one concrete class.
+    public int? ClassId { get; set; }
+    public CourseClass? Class { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

@@ -15,7 +15,7 @@
       <span class="flex items-center gap-2 font-semibold"
         [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/90'">
         <lucide-icon name="graduation-cap" class="h-5 w-5"></lucide-icon>
-        {{ assignment.course?.title }}
+        {{ assignment.course?.title }} · {{ assignment.className || 'Dùng chung toàn khoá' }}
       </span>
       <span class="flex items-center gap-2 font-semibold"
         [ngClass]="isOverdue(assignment.dueDate) ? 'text-danger' : 'text-white/90'">
@@ -72,7 +72,7 @@
           @if (submitMode === 'upload') {
             <tf-file-upload
               label="Bài làm"
-              hint="Chỉ giáo viên phụ trách khoá học và bạn xem được file này."
+              hint="Chỉ giáo viên phụ trách, quản trị viên và bạn xem được file này."
               (fileChange)="onFileUploaded($event)"
             ></tf-file-upload>
           }

@@ -53,11 +53,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(r => r.FileId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<Resource>()
+            .HasOne(r => r.Class)
+            .WithMany()
+            .HasForeignKey(r => r.ClassId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<Assignment>()
             .HasOne(a => a.Attachment)
             .WithMany()
             .HasForeignKey(a => a.AttachmentId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Assignment>()
+            .HasOne(a => a.Class)
+            .WithMany()
+            .HasForeignKey(a => a.ClassId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Submission>()
             .HasOne(s => s.File)

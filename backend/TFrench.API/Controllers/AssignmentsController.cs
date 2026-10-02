@@ -12,7 +12,8 @@ namespace TFrench.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AssignmentsController(AppDbContext db, FileStorageService storage) : ControllerBase
+public class AssignmentsController(AppDbContext db, FileStorageService storage,
+    LearningAccessService access) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
@@ -22,32 +23,12 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? courseId)
     {
-        var query = db.Assignments
+        IQueryable<Assignment> query = access.VisibleAssignments(CurrentUserId, CurrentRole)
             .Include(a => a.Course)
-            .Include(a => a.Attachment)
-            .AsQueryable();
+            .Include(a => a.Attachment);
 
         if (courseId.HasValue)
             query = query.Where(a => a.CourseId == courseId.Value);
-
-        // Students only see assignments for courses they're enrolled in
-        if (CurrentRole == "Student")
-        {
-            var enrolledCourseIds = await db.Enrollments
-                .Where(e => e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active)
-                .Select(e => e.CourseId)
-                .ToListAsync();
-            query = query.Where(a => enrolledCourseIds.Contains(a.CourseId));
-        }
-        // Teachers only see assignments for courses they teach
-        else if (CurrentRole == "Teacher")
-        {
-            var teacherCourseIds = await db.Courses
-                .Where(c => c.TeacherId == CurrentUserId)
-                .Select(c => c.Id)
-                .ToListAsync();
-            query = query.Where(a => teacherCourseIds.Contains(a.CourseId));
-        }
 
         var result = await query.OrderByDescending(a => a.DueDate).Select(a => new {
             a.Id, a.Title, a.Description, a.DueDate, a.AttachmentUrl,
@@ -55,7 +36,8 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
                 a.Attachment.PublicId, a.Attachment.OriginalName,
                 a.Attachment.ContentType, a.Attachment.SizeBytes
             },
-            Course = a.Course!.Title, a.CourseId, a.CreatedAt,
+            Course = a.Course!.Title, a.CourseId, a.ClassId, a.CreatedAt,
+            ClassName = a.Class == null ? null : a.Class.Name,
             SubmissionCount = a.Submissions.Count
         }).ToListAsync();
 
@@ -68,13 +50,14 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
     {
         var a = await db.Assignments
             .Include(x => x.Course)
+            .Include(x => x.Class)
             .Include(x => x.Attachment)
             .Include(x => x.Submissions).ThenInclude(s => s.Student)
             .Include(x => x.Submissions).ThenInclude(s => s.File)
             .FirstOrDefaultAsync(x => x.Id == id);
         if (a == null) return NotFound();
 
-        if (!await CanSeeAssignmentAsync(a)) return Forbid();
+        if (!await access.CanSeeAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
 
         // A student sees only their own submission. Returning the whole list
         // would show one student another student's mark and feedback.
@@ -84,7 +67,8 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
 
         return Ok(new
         {
-            a.Id, a.Title, a.Description, a.DueDate, a.CourseId, a.CreatedAt,
+            a.Id, a.Title, a.Description, a.DueDate, a.CourseId, a.ClassId, a.CreatedAt,
+            ClassName = a.Class == null ? null : a.Class.Name,
             a.AttachmentUrl,
             Attachment = Describe(a.Attachment),
             Course = a.Course == null ? null : new { a.Course.Id, a.Course.Title },
@@ -117,9 +101,8 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
         var course = await db.Courses.FindAsync(dto.CourseId);
         if (course == null) return BadRequest(new { message = "Khoá học không tồn tại." });
 
-        // Teacher can only create for their own courses
-        if (CurrentRole == "Teacher" && course.TeacherId != CurrentUserId)
-            return Forbid();
+        if (!await access.CanAttachToScopeAsync(dto.CourseId, dto.ClassId, CurrentUserId, CurrentRole))
+            return BadRequest(new { message = "Lớp không thuộc khoá hoặc không thuộc giáo viên hiện tại." });
 
         if (!await OwnsFileAsync(dto.AttachmentId))
             return BadRequest(new { message = "File đính kèm không hợp lệ." });
@@ -127,13 +110,18 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
         var assignment = new Assignment
         {
             Title = dto.Title, Description = dto.Description,
-            DueDate = dto.DueDate, CourseId = dto.CourseId,
+            DueDate = dto.DueDate, CourseId = dto.CourseId, ClassId = dto.ClassId,
             AttachmentUrl = string.IsNullOrWhiteSpace(dto.AttachmentUrl) ? null : dto.AttachmentUrl,
             AttachmentId = dto.AttachmentId
         };
         db.Assignments.Add(assignment);
         await db.SaveChangesAsync();
-        return Ok(assignment);
+        return Ok(new
+        {
+            assignment.Id, assignment.Title, assignment.Description,
+            assignment.DueDate, assignment.CourseId, assignment.ClassId,
+            assignment.AttachmentUrl, assignment.AttachmentId, assignment.CreatedAt,
+        });
     }
 
     // ── UPDATE assignment ─────────────────────────────────────────────────────
@@ -144,17 +132,22 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
         var a = await db.Assignments.Include(x => x.Course).Include(x => x.Attachment)
                                     .FirstOrDefaultAsync(x => x.Id == id);
         if (a == null) return NotFound();
-        if (CurrentRole == "Teacher" && a.Course!.TeacherId != CurrentUserId) return Forbid();
+        if (!await access.CanManageAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
             return BadRequest(new { message = "Tiêu đề bài tập phải có từ 1 đến 200 ký tự." });
         if (dto.CourseId != a.CourseId)
             return BadRequest(new { message = "Không thể chuyển bài tập sang khoá học khác sau khi tạo." });
+        if (!await access.CanAttachToScopeAsync(dto.CourseId, dto.ClassId, CurrentUserId, CurrentRole))
+            return BadRequest(new { message = "Lớp không thuộc khoá hoặc không thuộc giáo viên hiện tại." });
+        if (dto.ClassId != a.ClassId)
+            return BadRequest(new { message = "Không thể đổi phạm vi lớp của bài tập sau khi tạo." });
         if (dto.AttachmentId != null && !string.IsNullOrWhiteSpace(dto.AttachmentUrl))
             return BadRequest(new { message = "Chỉ được chọn một file hoặc một link đính kèm." });
         if (!string.IsNullOrWhiteSpace(dto.AttachmentUrl) && !IsHttpUrl(dto.AttachmentUrl))
             return BadRequest(new { message = "Link đính kèm phải là URL http/https hợp lệ." });
 
-        a.Title = dto.Title; a.Description = dto.Description; a.DueDate = dto.DueDate;
+        a.Title = dto.Title; a.Description = dto.Description;
+        a.DueDate = dto.DueDate; a.ClassId = dto.ClassId;
 
         // Only replace the brief when a new one is supplied — see the same rule
         // in ResourcesController.Update.
@@ -177,7 +170,11 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
         }
 
         await db.SaveChangesAsync();
-        return Ok(a);
+        return Ok(new
+        {
+            a.Id, a.Title, a.Description, a.DueDate, a.CourseId, a.ClassId,
+            a.AttachmentUrl, a.AttachmentId, a.CreatedAt,
+        });
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
@@ -191,7 +188,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
             .Include(x => x.Submissions).ThenInclude(s => s.File)
             .FirstOrDefaultAsync(x => x.Id == id);
         if (a == null) return NotFound();
-        if (CurrentRole == "Teacher" && a.Course!.TeacherId != CurrentUserId) return Forbid();
+        if (!await access.CanManageAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
 
         // Take the file rows with the assignment: once the submissions are gone
         // nothing points at those bytes, and they would sit on disk forever.
@@ -224,9 +221,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
 
         // Enrolment was previously unchecked here: any student could hand work
         // in to any course's assignment just by knowing its id.
-        var enrolled = await db.Enrollments.AnyAsync(e =>
-            e.CourseId == assignment.CourseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
-        if (!enrolled) return Forbid();
+        if (!await access.CanSeeAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
 
         // Check already submitted
         var existing = await db.Submissions
@@ -270,7 +265,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
             .FirstOrDefaultAsync(s => s.Id == submissionId && s.AssignmentId == assignmentId);
         if (submission == null) return NotFound();
 
-        if (CurrentRole == "Teacher" && submission.Assignment!.Course!.TeacherId != CurrentUserId)
+        if (!await access.CanManageAssignmentAsync(assignmentId, CurrentUserId, CurrentRole))
             return Forbid();
 
         submission.Grade = dto.Grade;
@@ -302,19 +297,6 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage) 
             })
             .ToListAsync();
         return Ok(subs);
-    }
-
-    /// <summary>Students must be enrolled and teachers must own the course; the
-    /// list endpoints already filter this way, and the detail endpoint has to
-    /// agree or it becomes the hole the list closed.</summary>
-    private async Task<bool> CanSeeAssignmentAsync(Assignment a)
-    {
-        if (CurrentRole == "Admin") return true;
-        if (CurrentRole == "Teacher")
-            return await db.Courses.AnyAsync(c => c.Id == a.CourseId && c.TeacherId == CurrentUserId);
-
-        return await db.Enrollments.AnyAsync(e =>
-            e.CourseId == a.CourseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
     }
 
     /// <summary>See ResourcesController.OwnsFileAsync — stops a caller

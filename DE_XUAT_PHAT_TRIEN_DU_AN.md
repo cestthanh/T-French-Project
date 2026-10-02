@@ -671,6 +671,7 @@ Pipeline tối thiểu:
 - [ ] Có học offline/hybrid và cần quản lý phòng học không?
 - [x] Quiz/Test MVP cho phép một lượt làm.
 - [x] Quiz/Test dùng thang điểm linh hoạt, tính từ tổng điểm các câu hỏi.
+- Quy tắc triển khai 02/10/2026: UI giao bài mới theo lớp, tài liệu chọn lớp/khóa/mọi tài khoản đăng nhập; migration giữ phạm vi khóa cho dữ liệu cũ. Không đổi lớp qua API sửa bài tập thông thường; tài liệu đã gắn lớp cũng không được bỏ/đổi lớp. Đây là giới hạn kỹ thuật hiện tại, các chính sách nộp trễ/nộp lại vẫn chưa chốt.
 - [ ] Chính sách nộp trễ, hủy lịch và no-show là gì?
 - [ ] Ai được viết, duyệt và publish blog?
 

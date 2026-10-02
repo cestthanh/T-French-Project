@@ -174,6 +174,7 @@ builder.Services.AddCors(options =>
 // appsettings would silently widen the list instead of narrowing it.
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.AddScoped<FileStorageService>();
+builder.Services.AddScoped<LearningAccessService>();
 
 // Kestrel's default multipart cap is 128 MB; bring it down near our own limit
 // so an oversized upload is rejected before it is buffered to disk.

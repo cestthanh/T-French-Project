@@ -7,6 +7,8 @@ export interface Assignment {
   dueDate: string;
   course: string;
   courseId: number;
+  classId?: number;
+  className?: string;
   /** External link to the brief. */
   attachmentUrl?: string;
   /** Uploaded brief. */
@@ -34,6 +36,7 @@ export interface CreateAssignmentRequest {
   description?: string;
   dueDate: string;
   courseId: number;
+  classId?: number;
   attachmentUrl?: string;
   attachmentId?: number;
 }

@@ -11,7 +11,8 @@ namespace TFrench.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class ResourcesController(AppDbContext db, FileStorageService storage) : ControllerBase
+public class ResourcesController(AppDbContext db, FileStorageService storage,
+    LearningAccessService access) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
@@ -20,30 +21,18 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? category)
     {
-        var query = db.Resources.Include(r => r.UploadedBy).Include(r => r.File).AsQueryable();
+        IQueryable<Resource> query = access.VisibleResources(CurrentUserId, CurrentRole)
+            .Include(r => r.UploadedBy).Include(r => r.File);
 
         if (!string.IsNullOrWhiteSpace(category))
             query = query.Where(r => r.Category == category);
 
-        // Students: only public resources + resources for their enrolled courses
-        if (CurrentRole == "Student")
-        {
-            var enrolledIds = await db.Enrollments
-                .Where(e => e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active)
-                .Select(e => e.CourseId).ToListAsync();
-
-            query = query.Where(r => r.IsPublic || (r.CourseId != null && enrolledIds.Contains(r.CourseId.Value)));
-        }
-        // Teachers: own uploads + public
-        else if (CurrentRole == "Teacher")
-        {
-            query = query.Where(r => r.IsPublic || r.UploadedById == CurrentUserId);
-        }
-        // Admin: see everything
-
         var result = await query.OrderByDescending(r => r.CreatedAt).Select(r => new {
             r.Id, r.Title, r.Description, r.FileUrl, r.FileType,
-            r.Category, r.IsPublic, r.CreatedAt, r.CourseId,
+            r.Category, r.IsPublic, r.CreatedAt, r.CourseId, r.ClassId,
+            CourseName = r.Course == null ? null : r.Course.Title,
+            ClassName = r.Class == null ? null : r.Class.Name,
+            r.UploadedById,
             UploadedBy = r.UploadedBy!.FullName,
             // Only the public id is exposed: the numeric FileId would let a
             // client probe the file table directly.
@@ -59,7 +48,7 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
     [HttpGet("categories")]
     public async Task<IActionResult> GetCategories()
     {
-        var cats = await db.Resources
+        var cats = await access.VisibleResources(CurrentUserId, CurrentRole)
             .Where(r => r.Category != null)
             .Select(r => r.Category!)
             .Distinct()
@@ -83,8 +72,12 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
 
         if (!await OwnsFileAsync(dto.FileId))
             return BadRequest(new { message = "File tải lên không hợp lệ." });
-        if (!await CanAttachToCourseAsync(dto.CourseId))
-            return BadRequest(new { message = "Khoá học không tồn tại hoặc không thuộc giáo viên hiện tại." });
+        if (!dto.IsPublic && dto.CourseId == null && dto.ClassId == null)
+            return BadRequest(new { message = "Tài liệu riêng phải được gắn với khoá hoặc lớp." });
+        if (dto.IsPublic && dto.ClassId != null)
+            return BadRequest(new { message = "Tài liệu riêng của lớp không thể mở cho mọi tài khoản." });
+        if (!await access.CanAttachToScopeAsync(dto.CourseId, dto.ClassId, CurrentUserId, CurrentRole))
+            return BadRequest(new { message = "Khoá/lớp không tồn tại, không khớp hoặc không thuộc giáo viên hiện tại." });
 
         var resource = new Resource
         {
@@ -96,6 +89,7 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
             Category = dto.Category,
             IsPublic = dto.IsPublic,
             CourseId = dto.CourseId,
+            ClassId = dto.ClassId,
             UploadedById = CurrentUserId
         };
         db.Resources.Add(resource);
@@ -111,18 +105,24 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
         var r = await db.Resources.Include(x => x.File).FirstOrDefaultAsync(x => x.Id == id);
         if (r == null) return NotFound();
         if (CurrentRole == "Teacher" && r.UploadedById != CurrentUserId) return Forbid();
+        if (r.ClassId != null && dto.ClassId != r.ClassId)
+            return BadRequest(new { message = "Không thể đổi phạm vi lớp của tài liệu sau khi tạo." });
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
             return BadRequest(new { message = "Tiêu đề tài liệu phải có từ 1 đến 200 ký tự." });
         if (dto.FileId != null && !string.IsNullOrWhiteSpace(dto.FileUrl))
             return BadRequest(new { message = "Chỉ được chọn một file hoặc một link tài liệu." });
         if (!string.IsNullOrWhiteSpace(dto.FileUrl) && !IsHttpUrl(dto.FileUrl))
             return BadRequest(new { message = "Link tài liệu phải là URL http/https hợp lệ." });
-        if (!await CanAttachToCourseAsync(dto.CourseId))
-            return BadRequest(new { message = "Khoá học không tồn tại hoặc không thuộc giáo viên hiện tại." });
+        if (!dto.IsPublic && dto.CourseId == null && dto.ClassId == null)
+            return BadRequest(new { message = "Tài liệu riêng phải được gắn với khoá hoặc lớp." });
+        if (dto.IsPublic && dto.ClassId != null)
+            return BadRequest(new { message = "Tài liệu riêng của lớp không thể mở cho mọi tài khoản." });
+        if (!await access.CanAttachToScopeAsync(dto.CourseId, dto.ClassId, CurrentUserId, CurrentRole))
+            return BadRequest(new { message = "Khoá/lớp không tồn tại, không khớp hoặc không thuộc giáo viên hiện tại." });
 
         r.Title = dto.Title; r.Description = dto.Description;
         r.Category = dto.Category; r.IsPublic = dto.IsPublic;
-        r.FileType = dto.FileType; r.CourseId = dto.CourseId;
+        r.FileType = dto.FileType; r.CourseId = dto.CourseId; r.ClassId = dto.ClassId;
 
         // Swapping the attachment: only when a new file is supplied, so an edit
         // that just fixes a typo in the title cannot drop the file by omission.
@@ -178,13 +178,6 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
             f.Id == fileId && (CurrentRole == "Admin" || f.UploadedById == CurrentUserId));
     }
 
-    private async Task<bool> CanAttachToCourseAsync(int? courseId)
-    {
-        if (courseId == null) return true;
-        return await db.Courses.AnyAsync(c =>
-            c.Id == courseId && (CurrentRole == "Admin" || c.TeacherId == CurrentUserId));
-    }
-
     private async Task DeleteFileAsync(StoredFile? file)
     {
         if (file == null) return;
@@ -201,4 +194,4 @@ public class ResourcesController(AppDbContext db, FileStorageService storage) : 
 // DTO — FileUrl and FileId are alternatives: an uploaded copy, or a link out.
 public record CreateResourceDto(
     string Title, string? Description, string? FileUrl, int? FileId,
-    string? FileType, string? Category, bool IsPublic, int? CourseId);
+    string? FileType, string? Category, bool IsPublic, int? CourseId, int? ClassId = null);

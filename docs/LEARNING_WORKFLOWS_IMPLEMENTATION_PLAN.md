@@ -2,7 +2,7 @@
 
 **Rà soát:** 01/10/2026
 
-**Trạng thái:** Phương án triển khai để chủ dự án duyệt các chính sách nghiệp vụ. Chưa có hạng mục nào trong tài liệu này được coi là đã triển khai.
+**Trạng thái:** Kế hoạch đang triển khai từng phần theo yêu cầu tiếp tục của chủ dự án. Ngày 02/10: W1 đã có quyền theo lớp và migration giữ dữ liệu cũ; W2 đã có form chọn lớp/phạm vi; W4 đã sửa autosave và có unit tests. W0 mới kiểm kê và thử migration trên snapshot cũ. Các chính sách còn mở, nháp/công bố bài tập, deadline/nộp lại và W5–W7 chưa hoàn tất. Bằng chứng và bước tiếp theo ở [STATUS.md](STATUS.md).
 
 **Phạm vi:** Tài liệu, bài tập có file/link/ghi chú, quiz online, chấm và trả kết quả cho học viên theo lớp.
 

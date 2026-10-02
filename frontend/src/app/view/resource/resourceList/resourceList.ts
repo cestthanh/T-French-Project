@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ResourceService } from 'src/app/services/resourceService';
-import { Resource, UploadedFile } from 'src/app/interface';
+import { ManagedClass, ManagedCourse, Resource, UploadedFile } from 'src/app/interface';
 import { AuthService } from 'src/app/services/authService';
+import { ClassService } from 'src/app/services/classService';
+import { CourseService } from 'src/app/services/courseService';
 import { FileService } from 'src/app/services/fileService';
 import { ToastService } from 'src/app/services/share/toastService';
 
@@ -22,6 +24,8 @@ export class ResourceList implements OnInit {
   resources: Resource[] = [];
   filtered: Resource[] = [];
   categories: string[] = [];
+  classes: ManagedClass[] = [];
+  courses: ManagedCourse[] = [];
   activeCategory: string | null = null;
   loading = true;
   saving = false;
@@ -34,6 +38,17 @@ export class ResourceList implements OnInit {
 
   get canManage(): boolean {
     return this.auth.isTeacher || this.auth.isAdmin;
+  }
+
+  get hasAudience(): boolean {
+    const form = this.createForm.value;
+    if (form.audience === 'authenticated') return true;
+    if (form.audience === 'course') return this.courses.some(c => c.id === form.courseId);
+    return this.classes.some(c => c.id === form.classId);
+  }
+
+  canDelete(resource: Resource): boolean {
+    return this.auth.isAdmin || (this.auth.isTeacher && resource.uploadedById === this.auth.currentUser?.id);
   }
 
   /** The form is only submittable once a source has actually been supplied —
@@ -51,17 +66,33 @@ export class ResourceList implements OnInit {
     private files: FileService,
     private fb: FormBuilder,
     private toast: ToastService,
+    private classService: ClassService,
+    private courseService: CourseService,
   ) {
     this.createForm = this.fb.group({
       title: ['', Validators.required],
       description: [''],
       fileUrl: [''],
       category: [''],
-      isPublic: [false],
+      audience: ['class'],
+      courseId: [null],
+      classId: [null],
     });
   }
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+    if (this.canManage) {
+      this.classService.getManaged().subscribe({
+        next: rows => (this.classes = rows),
+        error: () => this.toast.error('Không tải được danh sách lớp.'),
+      });
+      this.courseService.getMyCourses().subscribe({
+        next: rows => (this.courses = rows),
+        error: () => this.toast.error('Không tải được danh sách khoá học.'),
+      });
+    }
+  }
 
   load(): void {
     this.loading = true;
@@ -133,12 +164,20 @@ export class ResourceList implements OnInit {
   }
 
   onCreate(): void {
-    if (this.createForm.invalid || !this.hasSource) return;
+    if (this.createForm.invalid || !this.hasSource || !this.hasAudience || this.saving) return;
     this.saving = true;
+    const form = this.createForm.value;
+    const selectedClass = this.classes.find(c => c.id === form.classId);
 
     this.resourceService
       .create({
-        ...this.createForm.value,
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        isPublic: form.audience === 'authenticated',
+        courseId: form.audience === 'class' ? selectedClass!.courseId :
+          form.audience === 'course' ? form.courseId : undefined,
+        classId: form.audience === 'class' ? selectedClass!.id : undefined,
         fileUrl: this.sourceMode === 'link' ? this.createForm.value.fileUrl : undefined,
         fileId: this.sourceMode === 'upload' ? this.uploadedFile?.id : undefined,
       })
@@ -148,7 +187,7 @@ export class ResourceList implements OnInit {
           this.showCreate = false;
           this.uploadedFile = null;
           this.sourceMode = 'upload';
-          this.createForm.reset({ isPublic: false });
+          this.createForm.reset({ audience: 'class' });
           this.load();
           this.toast.success('Đã thêm tài liệu!');
         },

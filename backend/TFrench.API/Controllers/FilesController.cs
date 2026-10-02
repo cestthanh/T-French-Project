@@ -20,7 +20,8 @@ namespace TFrench.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class FilesController(AppDbContext db, FileStorageService storage) : ControllerBase
+public class FilesController(AppDbContext db, FileStorageService storage,
+    LearningAccessService access) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
@@ -100,45 +101,28 @@ public class FilesController(AppDbContext db, FileStorageService storage) : Cont
         var resource = await db.Resources.AsNoTracking()
             .FirstOrDefaultAsync(r => r.FileId == file.Id);
         if (resource != null)
-        {
-            if (resource.IsPublic) return true;
-            if (resource.CourseId == null) return false;   // private and unattached
-            return await HasCourseAccessAsync(resource.CourseId.Value);
-        }
+            return await access.CanSeeResourceAsync(resource.Id, CurrentUserId, CurrentRole);
 
         // ── as an assignment brief ────────────────────────────────────────────
         var assignment = await db.Assignments.AsNoTracking()
             .FirstOrDefaultAsync(a => a.AttachmentId == file.Id);
         if (assignment != null)
-            return await HasCourseAccessAsync(assignment.CourseId);
+            return await access.CanSeeAssignmentAsync(assignment.Id, CurrentUserId, CurrentRole);
 
         // ── as a student's submission ─────────────────────────────────────────
         // Only the author (already covered above) and the teacher who has to
         // mark it. Other students on the same course must not see each other's
-        // work, so this deliberately does not reuse HasCourseAccessAsync.
+        // work, so this requires management access to the assignment.
         var submission = await db.Submissions.AsNoTracking()
-            .Include(s => s.Assignment).ThenInclude(a => a!.Course)
             .FirstOrDefaultAsync(s => s.FileId == file.Id);
         if (submission != null)
         {
             if (submission.StudentId == CurrentUserId) return true;
-            return CurrentRole == "Teacher"
-                && submission.Assignment?.Course?.TeacherId == CurrentUserId;
+            return await access.CanManageAssignmentAsync(submission.AssignmentId, CurrentUserId, CurrentRole);
         }
 
         // Attached to nothing we recognise: refuse.
         return false;
-    }
-
-    /// <summary>True for a student actively enrolled on the course, or the
-    /// teacher who runs it.</summary>
-    private async Task<bool> HasCourseAccessAsync(int courseId)
-    {
-        if (CurrentRole == "Teacher")
-            return await db.Courses.AnyAsync(c => c.Id == courseId && c.TeacherId == CurrentUserId);
-
-        return await db.Enrollments.AnyAsync(e =>
-            e.CourseId == courseId && e.StudentId == CurrentUserId && e.Status == EnrollmentStatus.Active);
     }
 
     private object Describe(StoredFile f) => new

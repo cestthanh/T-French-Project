@@ -258,6 +258,157 @@ public sealed class LearningWorkflowTests
         Assert.Equal(17m, final.GetProperty("quiz").GetProperty("totalPoints").GetDecimal());
     }
 
+    [Fact]
+    public async Task ClassScopedMaterial_IsolatedAcrossListsDetailsDownloadsAndSubmission()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        var adminToken = await LoginAsync(client, "admin@tfrench.vn", "Admin@123");
+        var teacherAToken = await LoginAsync(client, "teacher@tfrench.vn", "Teacher@123");
+        var classA = (await GetJsonAsync(client, "/api/courses/1"))
+            .GetProperty("classes")[0].GetProperty("id").GetInt32();
+
+        var teacherBEmail = UniqueEmail("teacher");
+        int teacherBId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var teacherB = new User
+            {
+                FullName = "Second teacher", Email = teacherBEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("TeacherB@123"),
+                Role = UserRole.Teacher,
+            };
+            db.Users.Add(teacherB);
+            await db.SaveChangesAsync();
+            teacherBId = teacherB.Id;
+        }
+
+        Authorize(client, adminToken);
+        var classBResponse = await client.PostAsJsonAsync("/api/classes", new
+        {
+            name = "Class B", courseId = 1, teacherId = teacherBId,
+            startDate = DateTime.UtcNow.AddDays(2), endDate = DateTime.UtcNow.AddMonths(2),
+            capacity = 20, modality = "Online", status = "Open",
+        });
+        Assert.Equal(HttpStatusCode.OK, classBResponse.StatusCode);
+        var classB = (await ReadJsonAsync(classBResponse)).GetProperty("id").GetInt32();
+
+        var studentAToken = await RegisterAsync(client, UniqueEmail("class-a"));
+        Authorize(client, studentAToken);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.PostAsJsonAsync("/api/courses/1/enroll", new { classId = classA })).StatusCode);
+        var studentBToken = await RegisterAsync(client, UniqueEmail("class-b"));
+        Authorize(client, studentBToken);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.PostAsJsonAsync("/api/courses/1/enroll", new { classId = classB })).StatusCode);
+
+        Authorize(client, teacherAToken);
+        var resourceFile = await UploadTextAsync(client, "class-a-resource.txt");
+        var briefFile = await UploadTextAsync(client, "class-a-brief.txt");
+        var resourceResponse = await client.PostAsJsonAsync("/api/resources", new
+        {
+            title = "Class A only", fileId = resourceFile.Id,
+            isPublic = false, courseId = 1, classId = classA,
+        });
+        Assert.Equal(HttpStatusCode.OK, resourceResponse.StatusCode);
+        var resourceId = (await ReadJsonAsync(resourceResponse)).GetProperty("id").GetInt32();
+        var commonResourceResponse = await client.PostAsJsonAsync("/api/resources", new
+        {
+            title = "All classes", fileUrl = "https://example.test/common",
+            isPublic = false, courseId = 1,
+        });
+        Assert.Equal(HttpStatusCode.OK, commonResourceResponse.StatusCode);
+        var commonResourceId = (await ReadJsonAsync(commonResourceResponse)).GetProperty("id").GetInt32();
+        var assignmentResponse = await client.PostAsJsonAsync("/api/assignments", new
+        {
+            title = "Class A homework", dueDate = DateTime.UtcNow.AddDays(3),
+            courseId = 1, classId = classA, attachmentId = briefFile.Id,
+        });
+        Assert.True(assignmentResponse.StatusCode == HttpStatusCode.OK,
+            $"Assignment create returned {assignmentResponse.StatusCode}: {await assignmentResponse.Content.ReadAsStringAsync()}");
+        var assignmentId = (await ReadJsonAsync(assignmentResponse)).GetProperty("id").GetInt32();
+
+        // An older client omitting ClassId must not widen access to the course.
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync(
+            $"/api/assignments/{assignmentId}", new
+            {
+                title = "Edited homework", dueDate = DateTime.UtcNow.AddDays(3), courseId = 1,
+            })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PutAsJsonAsync(
+            $"/api/resources/{resourceId}", new
+            {
+                title = "Edited resource", isPublic = false, courseId = 1,
+            })).StatusCode);
+
+        Authorize(client, studentBToken);
+        var resourcesB = await GetJsonAsync(client, "/api/resources");
+        Assert.DoesNotContain(resourcesB.EnumerateArray(), r => r.GetProperty("id").GetInt32() == resourceId);
+        Assert.Contains(resourcesB.EnumerateArray(), r => r.GetProperty("id").GetInt32() == commonResourceId);
+        var assignmentsB = await GetJsonAsync(client, "/api/assignments");
+        Assert.DoesNotContain(assignmentsB.EnumerateArray(), a => a.GetProperty("id").GetInt32() == assignmentId);
+        Assert.Contains(assignmentsB.EnumerateArray(), a => a.GetProperty("classId").ValueKind == JsonValueKind.Null);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/api/assignments/{assignmentId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync(
+            $"/api/assignments/{assignmentId}/submit", new { note = "Not my class" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await client.GetAsync($"/api/files/{resourceFile.PublicId}/info")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await client.GetAsync($"/api/files/{briefFile.PublicId}")).StatusCode);
+
+        Authorize(client, studentAToken);
+        Assert.Contains((await GetJsonAsync(client, "/api/resources")).EnumerateArray(),
+            r => r.GetProperty("id").GetInt32() == resourceId);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync($"/api/files/{resourceFile.PublicId}/info")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync($"/api/files/{briefFile.PublicId}")).StatusCode);
+        var submissionResponse = await client.PostAsJsonAsync(
+            $"/api/assignments/{assignmentId}/submit", new { note = "My work" });
+        Assert.Equal(HttpStatusCode.OK, submissionResponse.StatusCode);
+        var submissionId = (await ReadJsonAsync(submissionResponse)).GetProperty("id").GetInt32();
+
+        // A second teacher of the same course may see common material, but not
+        // Class A's private work or its uploaded bytes.
+        var teacherBToken = await LoginAsync(client, teacherBEmail, "TeacherB@123");
+        Authorize(client, teacherBToken);
+        Assert.DoesNotContain((await GetJsonAsync(client, "/api/resources")).EnumerateArray(),
+            r => r.GetProperty("id").GetInt32() == resourceId);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/api/assignments/{assignmentId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await client.GetAsync($"/api/files/{resourceFile.PublicId}/info")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await client.DeleteAsync($"/api/assignments/{assignmentId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync(
+            $"/api/assignments/{assignmentId}/submissions/{submissionId}/grade", new { grade = 8 })).StatusCode);
+        Authorize(client, teacherAToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            $"/api/assignments/{assignmentId}/submissions/{submissionId}/grade", new { grade = 8 })).StatusCode);
+
+        // Pending enrolment cannot access even course-wide private material.
+        Authorize(client, adminToken);
+        var enrollment = (await GetJsonAsync(client, $"/api/classes/{classB}/enrollments"))[0];
+        var enrollmentId = enrollment.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.OK, (await client.PatchAsync(
+            $"/api/classes/enrollments/{enrollmentId}/status",
+            JsonContent.Create(new { status = "Pending" }))).StatusCode);
+        Authorize(client, studentBToken);
+        Assert.DoesNotContain((await GetJsonAsync(client, "/api/resources")).EnumerateArray(),
+            r => r.GetProperty("id").GetInt32() == commonResourceId);
+        Assert.Empty((await GetJsonAsync(client, "/api/assignments")).EnumerateArray());
+    }
+
+    private static async Task<(int Id, Guid PublicId)> UploadTextAsync(HttpClient client, string name)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes("Learning test file")), "file", name);
+        var response = await client.PostAsync("/api/files", content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var file = await ReadJsonAsync(response);
+        return (file.GetProperty("id").GetInt32(), file.GetProperty("publicId").GetGuid());
+    }
+
     private static async Task<string> LoginAsync(HttpClient client, string email, string password)
     {
         client.DefaultRequestHeaders.Authorization = null;

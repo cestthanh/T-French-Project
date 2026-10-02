@@ -14,6 +14,10 @@ export interface Resource {
   createdAt: string;
   uploadedBy: string;
   courseId?: number;
+  classId?: number;
+  courseName?: string;
+  className?: string;
+  uploadedById: number;
 }
 
 export interface CreateResourceRequest {
@@ -26,4 +30,5 @@ export interface CreateResourceRequest {
   category?: string;
   isPublic: boolean;
   courseId?: number;
+  classId?: number;
 }

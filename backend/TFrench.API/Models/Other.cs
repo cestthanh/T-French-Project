@@ -30,6 +30,10 @@ public class Resource
     public int? CourseId { get; set; }   // nullable — resource may not belong to a course
     public Course? Course { get; set; }
 
+    // Null means course-wide (or owner-only when CourseId is also null).
+    public int? ClassId { get; set; }
+    public CourseClass? Class { get; set; }
+
     public int UploadedById { get; set; }
     public User? UploadedBy { get; set; }
 

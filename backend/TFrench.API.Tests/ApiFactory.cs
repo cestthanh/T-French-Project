@@ -8,6 +8,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     private readonly string databasePath = Path.Combine(
         Path.GetTempPath(), $"tfrench-tests-{Guid.NewGuid():N}.db");
+    private readonly string storagePath = Path.Combine(
+        Path.GetTempPath(), $"tfrench-test-uploads-{Guid.NewGuid():N}");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -17,6 +19,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DefaultConnection"] = $"Data Source={databasePath}",
+                ["FileStorage:RootPath"] = storagePath,
                 ["DemoData:Enabled"] = "true",
                 ["Quiz:DeadlineSweepSeconds"] = "1",
             });
@@ -29,5 +32,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         if (!disposing) return;
         try { File.Delete(databasePath); }
         catch (IOException) { /* SQLite can release the file shortly after host disposal. */ }
+        var fullStoragePath = Path.GetFullPath(storagePath);
+        var tempRoot = Path.GetFullPath(Path.GetTempPath());
+        if (fullStoragePath.StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase) &&
+            Directory.Exists(fullStoragePath))
+            Directory.Delete(fullStoragePath, recursive: true);
     }
 }

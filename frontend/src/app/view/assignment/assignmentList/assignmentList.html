@@ -1,6 +1,6 @@
 <tf-page-header
   title="Bài tập"
-  [subtitle]="canManage ? 'Quản lý bài tập theo khoá học' : 'Xem và nộp bài tập của bạn'"
+  [subtitle]="canManage ? 'Quản lý bài tập theo lớp học' : 'Xem và nộp bài tập của bạn'"
   >
   @if (canManage) {
     <button type="button" tfButton variant="primary" size="md" (click)="showCreate = !showCreate">
@@ -23,8 +23,13 @@
         placeholder="Viết đoạn văn 5–10 câu..."></textarea>
       </tf-field>
       <div class="grid gap-5 sm:grid-cols-2">
-        <tf-field label="Mã khoá học" [required]="true" for="a-course" hint="Course ID">
-          <input id="a-course" tfInput type="number" formControlName="courseId" placeholder="1" />
+        <tf-field label="Lớp học" [required]="true" for="a-class">
+          <select id="a-class" tfInput formControlName="classId">
+            <option [ngValue]="null">Chọn lớp học</option>
+            @for (item of classes; track item.id) {
+              <option [ngValue]="item.id">{{ item.course }} — {{ item.name }}</option>
+            }
+          </select>
         </tf-field>
         <tf-field label="Hạn nộp" [required]="true" for="a-due">
           <input id="a-due" tfInput type="datetime-local" formControlName="dueDate" />
@@ -32,7 +37,7 @@
       </div>
       <tf-file-upload
         label="Đề bài đính kèm (tuỳ chọn)"
-        hint="Chỉ học viên đã ghi danh khoá học này tải được."
+        hint="Chỉ học viên đang học lớp được chọn tải được."
         (fileChange)="onAttachmentUploaded($event)"
       ></tf-file-upload>
       <div class="flex flex-wrap justify-end gap-3">
@@ -63,6 +68,7 @@
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
                 <span tfBadge tone="primary-soft" [square]="true">{{ a.course }}</span>
+                <p class="mt-2 text-sm text-ink-muted">{{ a.className || 'Dùng chung toàn khoá' }}</p>
                 <h3 class="mt-3 text-xl font-bold leading-snug tracking-heading">{{ a.title }}</h3>
               </div>
               @if (canManage) {
@@ -113,7 +119,7 @@
       <tf-empty-state
         icon="clipboard-list"
         title="Chưa có bài tập nào"
-        [description]="canManage ? 'Tạo bài tập đầu tiên cho khoá học của bạn.' : 'Giáo viên chưa giao bài tập nào.'"
+        [description]="canManage ? 'Tạo bài tập đầu tiên cho lớp học của bạn.' : 'Giáo viên chưa giao bài tập nào.'"
       ></tf-empty-state>
     }
   </div>
