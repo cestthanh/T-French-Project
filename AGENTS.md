@@ -41,4 +41,4 @@ Sau thay đổi đáng kể, cập nhật `docs/STATUS.md` với ngày, kết qu
 
 Đọc [docs/VALIDATION.md](docs/VALIDATION.md) để biết lệnh chạy, phạm vi test hiện có và khoảng trống kiểm thử. Backend nhắm `net10.0`; kết quả gần nhất có ngày nằm trong [docs/STATUS.md](docs/STATUS.md).
 
-Xem [docs/STATUS.md](docs/STATUS.md) cho kết quả gần nhất. Ghi rõ lệnh, kết quả và giới hạn môi trường; không đánh dấu một việc đã kiểm tra chỉ vì nhật ký cũ ghi thành công. Hiện chưa có frontend `*.spec.ts` hoặc workflow CI trong repository.
+Xem [docs/STATUS.md](docs/STATUS.md) cho kết quả gần nhất. Ghi rõ lệnh, kết quả và giới hạn môi trường; không đánh dấu một việc đã kiểm tra chỉ vì nhật ký cũ ghi thành công. Frontend hiện có test autosave quiz; chưa có browser E2E hoặc workflow CI trong repository.

@@ -9,6 +9,7 @@ Các lệnh kiểm tra và phạm vi phủ nằm ở đây; kết quả chạy g
 | Backend integration | Từ `backend/`: `dotnet test TFrench.sln` với .NET 10 SDK |
 | Backend qua Docker | Từ thư mục gốc: dùng lệnh container SDK 10 trong [README.md](../README.md) |
 | Frontend production build | Từ `frontend/`: `npm run build -- --configuration production` |
+| Frontend unit test | Từ `frontend/`: `npm test -- --watch=false --browsers=ChromeHeadless`; cần Chrome/Chromium |
 | API smoke tests | Chạy backend Development trước; từ `backend/tests/` chạy `./run-all.sh` trong Bash theo [hướng dẫn](../backend/tests/README.md) |
 | Kiểm tra diff | `git diff --check` và xem `git status --short --branch` |
 
@@ -16,6 +17,6 @@ Các lệnh kiểm tra và phạm vi phủ nằm ở đây; kết quả chạy g
 
 - `backend/TFrench.API.Tests/LearningWorkflowTests.cs` có bốn integration tests dùng database SQLite tạm: health, worker chốt quiz hết giờ, ghi danh miễn phí/trả phí và chuyển lead, luồng quiz gồm bảo mật đáp án/autosave/chấm điểm.
 - `backend/tests/` có ba smoke suites cho file, lead và blog. Chúng cần API đang chạy và dữ liệu mẫu Development; xem README của thư mục đó trước khi chạy.
-- `frontend/` có cấu hình Karma và lệnh `npm test`, nhưng chưa có test `*.spec.ts`. Repository cũng chưa có browser E2E hoặc workflow CI.
+- `frontend/src/app/view/quiz/quiz.spec.ts` kiểm tra cuộc đua autosave, nộp/quay lại trong lúc lưu, lỗi lưu và xung đột hai tab. Repository vẫn chưa có browser E2E hoặc workflow CI.
 
 Build thành công không chứng minh quyền truy cập, khôi phục dữ liệu hay môi trường production đã đúng. Những khoảng trống này được theo dõi tại [STATUS.md](STATUS.md).

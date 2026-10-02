@@ -27,14 +27,28 @@
       </div>
       <div class="flex items-center gap-3">
         @if (attempt.status === 'InProgress') {
-          <span class="text-sm text-white/70">
-            {{ saving ? 'Đang lưu...' : dirty ? 'Có thay đổi chưa lưu' : 'Đã tự lưu' }}
+          <span class="text-sm text-white/70" aria-live="polite">
+            {{ saveConflict ? 'Xung đột lưu bài — đáp án trên trang vẫn còn' :
+               saveError ? 'Lưu lỗi — đáp án trên trang vẫn còn' :
+               submitting ? 'Đang nộp bài...' :
+               saving ? 'Đang lưu...' : dirty ? 'Có thay đổi chưa lưu' : 'Đã lưu trên máy chủ' }}
           </span>
+          @if (saveConflict) {
+            <button type="button" tfButton variant="outline" size="sm" [disabled]="resolvingConflict"
+              (click)="resolveConflict(true)">Ghi bản trên trang</button>
+            <button type="button" tfButton variant="outline" size="sm" [disabled]="resolvingConflict"
+              (click)="resolveConflict(false)">Tải bản máy chủ</button>
+          } @else if (saveError) {
+            <button type="button" tfButton variant="outline" size="sm" (click)="retrySave()">Thử lưu lại</button>
+          }
         }
         @if (attempt.status === 'InProgress') {
-          <button type="button" tfButton variant="accent" (click)="submitAttempt()">Nộp bài</button>
+          <button type="button" tfButton variant="accent"
+            [disabled]="submitting || resolvingConflict || saveConflict || secondsRemaining === 0"
+            (click)="submitAttempt()">Nộp bài</button>
         }
-        <button type="button" tfButton variant="ghost" class="!text-white" (click)="closeAttempt()">Quay lại</button>
+        <button type="button" tfButton variant="ghost" class="!text-white" [disabled]="submitting || resolvingConflict"
+          (click)="closeAttempt()">{{ attempt.status === 'InProgress' && dirty ? 'Lưu và quay lại' : 'Quay lại' }}</button>
       </div>
     </div>
     <div class="space-y-5">
@@ -53,7 +67,7 @@
                 <label class="flex cursor-pointer items-start gap-3 rounded-md border-2 border-line p-4"
                   [ngClass]="attempt.status === 'Graded' && option.isCorrect ? '!border-success bg-success-soft' : ''">
                   <input type="radio" [name]="'q-' + question.id" [checked]="isSelected(question.id, option.id)"
-                    [disabled]="attempt.status !== 'InProgress'" (change)="selectSingle(question.id, option.id)"
+                    [disabled]="!canEdit" (change)="selectSingle(question.id, option.id)"
                     class="mt-1 h-4 w-4 text-primary" />
                   <span>{{ option.text }}</span>
                 </label>
@@ -66,7 +80,7 @@
                 <label class="flex cursor-pointer items-start gap-3 rounded-md border-2 border-line p-4"
                   [ngClass]="attempt.status === 'Graded' && option.isCorrect ? '!border-success bg-success-soft' : ''">
                   <input type="checkbox" [checked]="isSelected(question.id, option.id)"
-                    [disabled]="attempt.status !== 'InProgress'"
+                    [disabled]="!canEdit"
                     (change)="toggleMultiple(question.id, option.id, $any($event.target).checked)"
                     class="mt-1 h-4 w-4 rounded text-primary" />
                   <span>{{ option.text }}</span>
@@ -77,7 +91,7 @@
           @if (question.type === 'Essay') {
             <div class="mt-5">
               <textarea tfInput rows="12" [value]="answers[question.id].textAnswer || ''"
-                [disabled]="attempt.status !== 'InProgress'"
+                [disabled]="!canEdit"
                 (input)="setEssay(question.id, $any($event.target).value)"
               placeholder="Viết bài của bạn tại đây..."></textarea>
               <div class="mt-2 flex items-center justify-between gap-3 text-sm text-ink-muted">

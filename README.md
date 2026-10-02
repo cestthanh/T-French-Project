@@ -53,7 +53,7 @@ cd frontend
 npm run build -- --configuration production
 ```
 
-Các smoke tests Bash có hướng dẫn riêng tại [backend/tests/README.md](backend/tests/README.md). Hiện repository chưa có test frontend `*.spec.ts` hoặc workflow CI; xem [STATUS.md](docs/STATUS.md) để biết kết quả kiểm tra gần nhất và các giới hạn môi trường.
+Các smoke tests Bash có hướng dẫn riêng tại [backend/tests/README.md](backend/tests/README.md). Frontend có test autosave quiz chạy bằng `npm test -- --watch=false --browsers=ChromeHeadless`; hiện chưa có browser E2E hoặc workflow CI. Xem [STATUS.md](docs/STATUS.md) để biết kết quả kiểm tra gần nhất và các giới hạn môi trường.
 
 ## Triển khai và tài liệu
 

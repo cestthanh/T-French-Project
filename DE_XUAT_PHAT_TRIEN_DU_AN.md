@@ -1094,7 +1094,7 @@ Giữ module, bổ sung validation + rate limit trước; sau đó mở rộng p
 - Các form course/assignment/booking chưa dùng dữ liệu chọn quan hệ mà nhập ID.
 - `window.confirm` khó đồng bộ UI và không đủ linh hoạt.
 - Chưa có global loading/error strategy, cache/query state hoặc handling 401 thống nhất.
-- Không có frontend test.
+- Tại thời điểm đánh giá ban đầu không có frontend test; ngày 02/10/2026 đã bổ sung test autosave quiz, xem `docs/STATUS.md`.
 - Nội dung marketing/số liệu/giá đang hard-code trong component.
 
 #### Đề xuất refactor từng bước
@@ -1159,7 +1159,7 @@ Giữ module, bổ sung validation + rate limit trước; sau đó mở rộng p
 #### Khoảng trống
 
 - Tại thời điểm đánh giá ban đầu chưa có .NET test project; hiện đã có `backend/TFrench.API.Tests/`.
-- Không có Angular unit/component test.
+- Tại thời điểm đánh giá ban đầu không có Angular unit/component test; hiện có test autosave quiz, các module khác chưa được phủ.
 - Không có browser E2E.
 - Auth, course, enrollment, assignment, booking, profile và admin chưa được phủ đủ.
 - Script Bash phụ thuộc môi trường ngoài và chưa nằm trong CI.

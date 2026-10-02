@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import {
   AvailableQuiz,
   ManagedClass,
@@ -31,7 +32,10 @@ export class QuizPage implements OnInit, OnDestroy {
   secondsRemaining = 0;
   loading = true;
   saving = false;
-  dirty = false;
+  saveError = false;
+  saveConflict = false;
+  resolvingConflict = false;
+  submitting = false;
   creating = false;
 
   quizDraft = {
@@ -44,8 +48,17 @@ export class QuizPage implements OnInit, OnDestroy {
   private clock?: ReturnType<typeof setInterval>;
   private autosave?: ReturnType<typeof setInterval>;
   private saveDebounce?: ReturnType<typeof setTimeout>;
+  private saveSubscription?: Subscription;
+  private editRevision = 0;
+  private savedRevision = 0;
+  private pendingAction: 'close' | 'submit' | null = null;
 
   get isStudent(): boolean { return this.auth.currentUser?.role === 'Student'; }
+  get dirty(): boolean { return this.editRevision > this.savedRevision; }
+  get canEdit(): boolean {
+    return this.attempt?.status === 'InProgress' && this.secondsRemaining > 0 &&
+      !this.submitting && !this.resolvingConflict;
+  }
   get totalPoints(): number { return this.quizDraft.questions.reduce((sum, q) => sum + Number(q.points || 0), 0); }
   questionTypeLabel(type: QuizQuestionType): string {
     if (type === 'SingleChoice') return 'Trắc nghiệm · Một đáp án';
@@ -75,9 +88,26 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.clock) clearInterval(this.clock);
-    if (this.autosave) clearInterval(this.autosave);
+    this.stopTimers();
     if (this.saveDebounce) clearTimeout(this.saveDebounce);
+    this.saveSubscription?.unsubscribe();
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  warnBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.hasUnconfirmedWork()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  canLeave(): boolean {
+    return !this.hasUnconfirmedWork() || confirm('Đáp án chưa được lưu hoặc bài đang được nộp. Rời trang sẽ mất các thay đổi này. Bạn vẫn muốn rời đi?');
+  }
+
+  private hasUnconfirmedWork(): boolean {
+    return this.attempt?.status === 'InProgress' &&
+      (this.dirty || this.saving || this.saveError || this.saveConflict || this.submitting);
   }
 
   loadAvailable(): void {
@@ -107,35 +137,41 @@ export class QuizPage implements OnInit, OnDestroy {
 
   loadAttempt(id: number): void {
     this.quizService.getAttempt(id).subscribe({
-      next: attempt => {
-        this.attempt = attempt;
-        this.answers = {};
-        for (const question of attempt.questions) {
-          this.answers[question.id] = {
-            textAnswer: question.answer?.textAnswer ?? '',
-            selectedOptionIds: [...(question.answer?.selectedOptionIds ?? [])],
-          };
-        }
-        this.dirty = false;
-        this.startTimers();
-      },
+      next: attempt => this.applyAttempt(attempt),
       error: () => this.toast.error('Không tải được lượt làm bài.'),
     });
   }
 
   closeAttempt(): void {
-    if (this.dirty && this.attempt?.status === 'InProgress') this.saveAnswers();
+    if (this.pendingAction || this.submitting || this.resolvingConflict) return;
+    if (this.saveConflict) {
+      this.toast.error('Hãy xử lý xung đột lưu bài trước khi quay lại.');
+      return;
+    }
+    if (this.attempt?.status === 'InProgress' && (this.dirty || this.saving)) {
+      this.pendingAction = 'close';
+      this.saveAnswers();
+      return;
+    }
+    this.hideAttempt();
+  }
+
+  private hideAttempt(): void {
     this.attempt = null;
     this.stopTimers();
+    if (this.saveDebounce) clearTimeout(this.saveDebounce);
+    this.answers = {};
     this.loadAvailable();
   }
 
   selectSingle(questionId: number, optionId: number): void {
+    if (!this.canEdit) return;
     this.answers[questionId].selectedOptionIds = [optionId];
     this.markDirty();
   }
 
   toggleMultiple(questionId: number, optionId: number, checked: boolean): void {
+    if (!this.canEdit) return;
     const selected = this.answers[questionId].selectedOptionIds;
     this.answers[questionId].selectedOptionIds = checked
       ? [...new Set([...selected, optionId])]
@@ -144,6 +180,7 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   setEssay(questionId: number, value: string): void {
+    if (!this.canEdit) return;
     this.answers[questionId].textAnswer = value;
     this.markDirty();
   }
@@ -152,49 +189,131 @@ export class QuizPage implements OnInit, OnDestroy {
     return this.answers[questionId]?.selectedOptionIds.includes(optionId) ?? false;
   }
 
-  saveAnswers(afterSave?: () => void): void {
+  saveAnswers(): void {
     if (!this.attempt || this.attempt.status !== 'InProgress') return;
-    if (this.saving) {
-      if (afterSave) setTimeout(() => this.saveAnswers(afterSave), 300);
-      return;
-    }
-    if (!this.dirty) { afterSave?.(); return; }
+    if (this.saving || this.saveConflict || this.resolvingConflict) return;
+    if (this.saveError && !this.pendingAction) return;
+    if (!this.dirty) { this.runPendingAction(); return; }
+
     this.saving = true;
+    this.saveError = false;
+    const attemptId = this.attempt.id;
+    const sentRevision = this.editRevision;
     const payload = Object.entries(this.answers).map(([questionId, answer]) => ({
       questionId: Number(questionId), textAnswer: answer.textAnswer,
-      selectedOptionIds: answer.selectedOptionIds,
+      selectedOptionIds: [...answer.selectedOptionIds],
     }));
-    this.quizService.saveAnswers(this.attempt.id, this.attempt.version, payload).subscribe({
+    this.saveSubscription = this.quizService.saveAnswers(attemptId, this.attempt.version, payload).subscribe({
       next: result => {
+        if (this.attempt?.id !== attemptId) return;
         this.saving = false;
-        this.dirty = false;
-        this.attempt!.version = result.version;
-        afterSave?.();
+        this.savedRevision = sentRevision;
+        this.attempt.version = result.version;
+        if (this.dirty) this.saveAnswers();
+        else this.runPendingAction();
       },
       error: err => {
+        if (this.attempt?.id !== attemptId) return;
         this.saving = false;
-        this.toast.error(err?.error?.message ?? 'Không thể tự lưu đáp án.');
-        if (err?.status === 409) this.loadAttempt(this.attempt!.id);
+        this.saveError = true;
+        this.saveConflict = err?.status === 409;
+        this.pendingAction = null;
+        this.submitting = false;
+        this.toast.error(err?.error?.message ?? 'Không thể tự lưu đáp án. Đáp án đang nhập vẫn ở trên trang.');
       },
     });
   }
 
   submitAttempt(auto = false): void {
-    if (!this.attempt || this.attempt.status !== 'InProgress') return;
+    if (!this.attempt || this.attempt.status !== 'InProgress' ||
+        this.pendingAction || this.submitting || this.resolvingConflict) return;
     if (!auto && !confirm('Nộp bài ngay? Bạn không thể sửa đáp án sau khi nộp.')) return;
-    this.saveAnswers(() => this.finishSubmit());
+    if (this.saveConflict) {
+      this.toast.error('Hãy xử lý xung đột lưu bài trước khi nộp.');
+      return;
+    }
+    this.submitting = true;
+    this.pendingAction = 'submit';
+    this.saveAnswers();
   }
 
   private finishSubmit(): void {
     if (!this.attempt) return;
     this.quizService.submit(this.attempt.id).subscribe({
       next: () => {
+        this.submitting = false;
         this.toast.success('Đã nộp bài thành công.');
         this.loadAttempt(this.attempt!.id);
         this.loadAvailable();
       },
-      error: err => this.toast.error(err?.error?.message ?? 'Không thể nộp bài.'),
+      error: err => {
+        this.submitting = false;
+        this.toast.error(err?.error?.message ?? 'Không thể xác nhận nộp bài. Hãy thử lại.');
+      },
     });
+  }
+
+  retrySave(): void {
+    if (!this.attempt || this.saveConflict) return;
+    this.saveError = false;
+    this.saveAnswers();
+  }
+
+  resolveConflict(keepLocal: boolean): void {
+    if (!this.attempt || this.resolvingConflict) return;
+    if (!keepLocal && !confirm('Tải đáp án trên máy chủ sẽ bỏ các thay đổi chưa lưu trên máy này. Tiếp tục?')) return;
+    this.resolvingConflict = true;
+    const attemptId = this.attempt.id;
+    this.quizService.getAttempt(attemptId).subscribe({
+      next: latest => {
+        this.resolvingConflict = false;
+        if (this.attempt?.id !== attemptId) return;
+        if (!keepLocal) {
+          this.applyAttempt(latest);
+          return;
+        }
+        if (latest.status !== 'InProgress') {
+          this.toast.error('Bài đã chốt trên máy chủ. Hãy tải bản máy chủ để xem kết quả.');
+          return;
+        }
+        this.attempt.version = latest.version;
+        this.saveConflict = false;
+        this.saveError = false;
+        this.saveAnswers();
+      },
+      error: () => {
+        this.resolvingConflict = false;
+        this.toast.error('Không tải được trạng thái bài trên máy chủ.');
+      },
+    });
+  }
+
+  private applyAttempt(attempt: QuizAttempt): void {
+    this.attempt = attempt;
+    this.answers = {};
+    for (const question of attempt.questions) {
+      this.answers[question.id] = {
+        textAnswer: question.answer?.textAnswer ?? '',
+        selectedOptionIds: [...(question.answer?.selectedOptionIds ?? [])],
+      };
+    }
+    this.editRevision = 0;
+    this.savedRevision = 0;
+    this.saving = false;
+    this.saveError = false;
+    this.saveConflict = false;
+    this.pendingAction = null;
+    this.submitting = false;
+    if (this.saveDebounce) clearTimeout(this.saveDebounce);
+    this.startTimers();
+  }
+
+  private runPendingAction(): void {
+    if (this.dirty || this.saving || this.saveError || this.saveConflict) return;
+    const action = this.pendingAction;
+    this.pendingAction = null;
+    if (action === 'close') this.hideAttempt();
+    if (action === 'submit') this.finishSubmit();
   }
 
   addQuestion(type: QuizQuestionType): void {
@@ -282,7 +401,8 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   private markDirty(): void {
-    this.dirty = true;
+    this.editRevision++;
+    if (!this.saveConflict) this.saveError = false;
     if (this.saveDebounce) clearTimeout(this.saveDebounce);
     this.saveDebounce = setTimeout(() => this.saveAnswers(), 1500);
   }
@@ -295,6 +415,7 @@ export class QuizPage implements OnInit, OnDestroy {
       if (this.secondsRemaining === 0) { this.stopTimers(); this.submitAttempt(true); }
     };
     tick();
+    if (this.secondsRemaining === 0) return;
     this.clock = setInterval(tick, 1000);
     this.autosave = setInterval(() => this.saveAnswers(), 15_000);
   }
