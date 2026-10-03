@@ -90,6 +90,12 @@ export interface SaveQuizRequest {
   questions: SaveQuizQuestion[];
 }
 
+export interface ManagedQuizDetail extends SaveQuizRequest {
+  id: number;
+  isPublished: boolean;
+  attemptCount: number;
+}
+
 export interface QuizResult {
   id: number;
   studentId: number;

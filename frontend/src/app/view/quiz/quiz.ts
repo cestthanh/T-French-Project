@@ -37,6 +37,8 @@ export class QuizPage implements OnInit, OnDestroy {
   resolvingConflict = false;
   submitting = false;
   creating = false;
+  loadingEditor = false;
+  editingQuizId: number | null = null;
 
   quizDraft = {
     title: '', description: '', classId: null as number | null,
@@ -44,6 +46,8 @@ export class QuizPage implements OnInit, OnDestroy {
     showAnswersAfterGrading: true,
     questions: [] as SaveQuizQuestion[],
   };
+
+  private draftBaseline = JSON.stringify(this.quizDraft);
 
   private clock?: ReturnType<typeof setInterval>;
   private autosave?: ReturnType<typeof setInterval>;
@@ -55,6 +59,7 @@ export class QuizPage implements OnInit, OnDestroy {
 
   get isStudent(): boolean { return this.auth.currentUser?.role === 'Student'; }
   get dirty(): boolean { return this.editRevision > this.savedRevision; }
+  get draftDirty(): boolean { return JSON.stringify(this.quizDraft) !== this.draftBaseline; }
   get canEdit(): boolean {
     return this.attempt?.status === 'InProgress' && this.secondsRemaining > 0 &&
       !this.submitting && !this.resolvingConflict;
@@ -102,10 +107,13 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   canLeave(): boolean {
+    if (!this.isStudent) return !this.draftDirty && !this.creating ||
+      confirm('Đề đang soạn chưa được lưu. Rời trang sẽ mất thay đổi. Bạn vẫn muốn rời đi?');
     return !this.hasUnconfirmedWork() || confirm('Đáp án chưa được lưu hoặc bài đang được nộp. Rời trang sẽ mất các thay đổi này. Bạn vẫn muốn rời đi?');
   }
 
   private hasUnconfirmedWork(): boolean {
+    if (!this.isStudent) return this.draftDirty || this.creating;
     return this.attempt?.status === 'InProgress' &&
       (this.dirty || this.saving || this.saveError || this.saveConflict || this.submitting);
   }
@@ -124,7 +132,10 @@ export class QuizPage implements OnInit, OnDestroy {
       next: rows => { this.managed = rows; this.loading = false; },
       error: () => { this.loading = false; this.toast.error('Không tải được bài test.'); },
     });
-    this.classService.getManaged().subscribe({ next: rows => (this.classes = rows) });
+    this.classService.getManaged().subscribe({
+      next: rows => (this.classes = rows),
+      error: () => this.toast.error('Không tải được danh sách lớp.'),
+    });
   }
 
   openQuiz(item: AvailableQuiz): void {
@@ -338,34 +349,95 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   createQuiz(): void {
+    if (this.creating || this.loadingEditor) return;
     if (!this.quizDraft.title.trim() || !this.quizDraft.classId || !this.quizDraft.openAt || !this.quizDraft.closeAt) {
       this.toast.error('Vui lòng nhập đủ tên, lớp và thời gian mở/đóng.'); return;
     }
     if (!this.quizDraft.questions.length) { this.toast.error('Bài test phải có ít nhất một câu hỏi.'); return; }
     if (this.totalPoints <= 0) { this.toast.error('Tổng điểm của đề phải lớn hơn 0.'); return; }
 
+    const openAt = new Date(this.quizDraft.openAt);
+    const closeAt = new Date(this.quizDraft.closeAt);
+    if (!Number.isFinite(openAt.getTime()) || !Number.isFinite(closeAt.getTime()) || closeAt <= openAt) {
+      this.toast.error('Thời gian đóng phải sau thời gian mở.'); return;
+    }
+    if (!Number.isInteger(this.quizDraft.durationMinutes) || this.quizDraft.durationMinutes < 1 || this.quizDraft.durationMinutes > 480) {
+      this.toast.error('Thời lượng phải là số nguyên từ 1 đến 480 phút.'); return;
+    }
+
     const request: SaveQuizRequest = {
       ...this.quizDraft,
       classId: this.quizDraft.classId,
-      openAt: new Date(this.quizDraft.openAt).toISOString(),
-      closeAt: new Date(this.quizDraft.closeAt).toISOString(),
+      openAt: openAt.toISOString(),
+      closeAt: closeAt.toISOString(),
     };
     this.creating = true;
-    this.quizService.create(request).subscribe({
+    const editing = this.editingQuizId != null;
+    const save = editing ? this.quizService.update(this.editingQuizId!, request) : this.quizService.create(request);
+    save.subscribe({
       next: () => {
         this.creating = false;
         this.resetDraft();
         this.loadManaged();
-        this.toast.success('Đã tạo bản nháp bài test. Hãy kiểm tra rồi publish.');
+        this.toast.success(editing ? 'Đã lưu thay đổi bản nháp.' : 'Đã tạo bản nháp bài test. Hãy kiểm tra rồi công bố.');
       },
-      error: err => { this.creating = false; this.toast.error(err?.error?.message ?? 'Không thể tạo bài test.'); },
+      error: err => { this.creating = false; this.toast.error(err?.error?.message ?? 'Không thể lưu bài test.'); },
     });
   }
 
+  editQuiz(item: ManagedQuiz): void {
+    if (this.creating || this.loadingEditor) return;
+    if (item.isPublished || item.attemptCount > 0) {
+      this.toast.error('Chỉ sửa được bản nháp chưa có lượt làm.'); return;
+    }
+    if (this.draftDirty && !confirm('Đề đang soạn chưa lưu. Bỏ thay đổi để mở bản nháp này?')) return;
+    this.loadingEditor = true;
+    this.quizService.getManagedDetail(item.id).subscribe({
+      next: detail => {
+        this.loadingEditor = false;
+        if (detail.isPublished || detail.attemptCount > 0) {
+          this.toast.error('Đề đã được công bố hoặc có lượt làm. Hãy tải lại danh sách.'); return;
+        }
+        this.editingQuizId = detail.id;
+        this.quizDraft = {
+          title: detail.title, description: detail.description ?? '', classId: detail.classId,
+          openAt: this.localDateTime(detail.openAt), closeAt: this.localDateTime(detail.closeAt),
+          durationMinutes: detail.durationMinutes, showAnswersAfterGrading: detail.showAnswersAfterGrading,
+          questions: detail.questions.map(q => ({
+            type: q.type, content: q.content, points: q.points,
+            explanation: q.explanation ?? '', rubric: q.rubric ?? '',
+            options: q.options.map(o => ({ text: o.text, isCorrect: o.isCorrect })),
+          })),
+        };
+        this.draftBaseline = JSON.stringify(this.quizDraft);
+      },
+      error: err => {
+        this.loadingEditor = false;
+        this.toast.error(err?.error?.message ?? 'Không tải được bản nháp.');
+      },
+    });
+  }
+
+  newDraft(): void {
+    if (this.creating || this.loadingEditor) return;
+    if (this.draftDirty && !confirm('Bỏ các thay đổi chưa lưu để soạn đề mới?')) return;
+    this.resetDraft();
+  }
+
+  private localDateTime(value: string): string {
+    const date = new Date(value);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
+  }
+
   togglePublish(item: ManagedQuiz): void {
+    if (this.creating || this.loadingEditor) return;
+    if (this.editingQuizId === item.id && this.draftDirty) {
+      this.toast.error('Hãy lưu thay đổi bản nháp trước khi công bố.'); return;
+    }
     this.quizService.togglePublish(item.id).subscribe({
       next: result => {
         item.isPublished = result.isPublished;
+        if (this.editingQuizId === item.id) this.resetDraft();
         this.toast.success(result.isPublished ? 'Đã publish bài test.' : 'Đã ẩn bài test.');
       },
       error: err => this.toast.error(err?.error?.message ?? 'Không thể publish bài test.'),
@@ -427,6 +499,8 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   private resetDraft(): void {
+    this.editingQuizId = null;
     this.quizDraft = { title: '', description: '', classId: null, openAt: '', closeAt: '', durationMinutes: 45, showAnswersAfterGrading: true, questions: [] };
+    this.draftBaseline = JSON.stringify(this.quizDraft);
   }
 }

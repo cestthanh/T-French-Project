@@ -399,6 +399,60 @@ public sealed class LearningWorkflowTests
         Assert.Empty((await GetJsonAsync(client, "/api/assignments")).EnumerateArray());
     }
 
+    [Fact]
+    public async Task QuizDraft_CanBeEditedUntilPublishedOrAttempted()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        var teacherToken = await LoginAsync(client, "teacher@tfrench.vn", "Teacher@123");
+        var classId = (await GetJsonAsync(client, "/api/courses/1"))
+            .GetProperty("classes")[0].GetProperty("id").GetInt32();
+        var studentToken = await RegisterAsync(client, UniqueEmail("draft"));
+        Authorize(client, studentToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            "/api/courses/1/enroll", new { classId })).StatusCode);
+
+        object Draft(string title) => new
+        {
+            title, classId, openAt = DateTime.UtcNow.AddMinutes(-1),
+            closeAt = DateTime.UtcNow.AddHours(1), durationMinutes = 30,
+            showAnswersAfterGrading = false,
+            questions = new[] { new
+            {
+                type = "Essay", content = "Écrivez un paragraphe", points = 10,
+                rubric = "Clarté", options = Array.Empty<object>(),
+            } },
+        };
+
+        Authorize(client, teacherToken);
+        var created = await ReadJsonAsync(await client.PostAsJsonAsync("/api/quizzes", Draft("First draft")));
+        var quizId = created.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync(
+            $"/api/quizzes/{quizId}", Draft("Edited draft"))).StatusCode);
+        var detail = await GetJsonAsync(client, $"/api/quizzes/manage/{quizId}");
+        Assert.Equal("Edited draft", detail.GetProperty("title").GetString());
+        Assert.Equal("Clarté", detail.GetProperty("questions")[0].GetProperty("rubric").GetString());
+        Assert.Equal(0, detail.GetProperty("attemptCount").GetInt32());
+        Assert.Equal(HttpStatusCode.OK, (await client.PatchAsync(
+            $"/api/quizzes/{quizId}/publish", JsonContent.Create(new { }))).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync(
+            $"/api/quizzes/{quizId}", Draft("Must not overwrite"))).StatusCode);
+
+        Authorize(client, studentToken);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/api/quizzes/manage/{quizId}")).StatusCode);
+        var started = await ReadJsonAsync(await client.PostAsJsonAsync($"/api/quizzes/{quizId}/start", new { }));
+        var attemptId = started.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/quizzes/attempts/{attemptId}/submit", new { })).StatusCode);
+        Authorize(client, teacherToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PatchAsync(
+            $"/api/quizzes/{quizId}/publish", JsonContent.Create(new { }))).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync(
+            $"/api/quizzes/{quizId}", Draft("Hidden but attempted"))).StatusCode);
+        detail = await GetJsonAsync(client, $"/api/quizzes/manage/{quizId}");
+        Assert.Equal("Edited draft", detail.GetProperty("title").GetString());
+        Assert.Equal(1, detail.GetProperty("attemptCount").GetInt32());
+    }
+
     private static async Task<(int Id, Guid PublicId)> UploadTextAsync(HttpClient client, string name)
     {
         using var content = new MultipartFormDataContent();

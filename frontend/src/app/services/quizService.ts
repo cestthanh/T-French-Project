@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AvailableQuiz, ManagedQuiz, QuizAttempt, QuizResult, SaveQuizRequest } from 'src/app/interface';
+import { AvailableQuiz, ManagedQuiz, ManagedQuizDetail, QuizAttempt, QuizResult, SaveQuizRequest } from 'src/app/interface';
 import { uriConfig } from './Uri/uriConfig';
 
 @Injectable({ providedIn: 'root' })
@@ -10,7 +10,9 @@ export class QuizService {
   constructor(private http: HttpClient) {}
 
   getManaged(): Observable<ManagedQuiz[]> { return this.http.get<ManagedQuiz[]>(`${this.base}/manage`); }
+  getManagedDetail(id: number): Observable<ManagedQuizDetail> { return this.http.get<ManagedQuizDetail>(`${this.base}/manage/${id}`); }
   create(data: SaveQuizRequest): Observable<{ id: number }> { return this.http.post<{ id: number }>(this.base, data); }
+  update(id: number, data: SaveQuizRequest): Observable<{ id: number }> { return this.http.put<{ id: number }>(`${this.base}/${id}`, data); }
   togglePublish(id: number): Observable<{ isPublished: boolean }> { return this.http.patch<{ isPublished: boolean }>(`${this.base}/${id}/publish`, {}); }
   getAvailable(): Observable<AvailableQuiz[]> { return this.http.get<AvailableQuiz[]>(`${this.base}/available`); }
   start(id: number): Observable<{ id: number }> { return this.http.post<{ id: number }>(`${this.base}/${id}/start`, {}); }

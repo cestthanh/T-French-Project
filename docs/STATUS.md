@@ -1,6 +1,6 @@
 # Trạng thái T-French
 
-**Cập nhật:** 02/10/2026. Đây là ảnh chụp trạng thái repository, không phải xác nhận hệ thống đã triển khai trên Railway. Đọc `git status --short --branch` trước khi tiếp tục vì working tree có thể thay đổi giữa các phiên.
+**Cập nhật:** 03/10/2026. Đây là ảnh chụp trạng thái repository, không phải xác nhận hệ thống đã triển khai trên Railway. Đọc `git status --short --branch` trước khi tiếp tục vì working tree có thể thay đổi giữa các phiên.
 
 ## Điểm xuất phát
 
@@ -21,6 +21,7 @@ Chi tiết và lịch sử triển khai nằm trong `DE_XUAT_PHAT_TRIEN_DU_AN.md
 
 ## Bằng chứng kiểm tra gần nhất
 
+- Ngày 03/10/2026: W2 nối sửa quiz nháp vào trình soạn, giữ câu hỏi/đáp án/rubric và chuyển UTC sang giờ địa phương rồi lưu lại; chặn sửa đề đã công bố/có lượt làm, cảnh báo thay đổi chưa lưu. Backend container SDK 10: **6/6 integration tests pass**; frontend ChromeHeadless: **8/8 unit tests pass**; production build: **thành công**. Đây chưa phải browser E2E với API thật.
 - Ngày 02/10/2026: W1 bổ sung `ClassId` nullable cho tài liệu/bài tập và `LearningAccessService`; form chọn lớp/phạm vi thay ô nhập ID; client bỏ `ClassId` khi sửa không làm rộng quyền. `dotnet test TFrench.sln --verbosity minimal` trong container SDK 10: **5/5 integration tests pass**, gồm hai lớp cùng khóa, quyền file/nộp/chấm/xóa và Pending. `npm run build -- --configuration production`: **thành công** sau thay đổi form.
 - Ngày 02/10/2026: sửa autosave quiz bằng revision cục bộ: đáp án sửa trong lúc request đang chạy được lưu tiếp; nộp/quay lại đợi server xác nhận; lỗi lưu/xung đột giữ đáp án trên trang và có thao tác xử lý; cảnh báo khi rời trang. `npm test -- --watch=false --browsers=ChromeHeadless`: **5/5 pass**; frontend production build sau sửa: **thành công**. Chưa có E2E với API thật hoặc kiểm thử thủ công hai tab.
 - Ngày 02/10/2026: kiểm kê **snapshot SQLite cũ** ở chế độ read-only: 12 Resource, 1 Assignment, 8 Submission, 29 StoredFile, 8 Enrollment; không thấy cặp Submission trùng. Chạy `dotnet ef database update` tới `20261002163903_ClassScopedLearning` trên **bản sao tạm**: `quick_check=ok`, không có lỗi foreign key; số dòng và SHA-256 của các cột dữ liệu gốc ở Resource/Assignment/Submission/StoredFile không đổi. Assignment cũ giữ `ClassId=null`. Đây là kiểm tra migration database lịch sử, chưa phải kiểm kê production hoặc restore kèm file upload.
@@ -33,7 +34,7 @@ Chi tiết và lịch sử triển khai nằm trong `DE_XUAT_PHAT_TRIEN_DU_AN.md
 
 ## Việc tiếp theo
 
-1. Tiếp tục W2: sửa quiz nháp từ UI, nháp/công bố bài tập và xem trước; W3: mốc thời gian phía server và chống nộp trùng. W1 đã có code/test; W4 có unit tests nhưng chưa kiểm thử trình duyệt với API thật. W0 cần đối chiếu dữ liệu hiện hành trước triển khai; snapshot lịch sử không thay thế bước này.
+1. Tiếp tục W2: nháp/công bố bài tập và xem trước (form chọn phạm vi và sửa quiz nháp đã có); W3: mốc thời gian phía server và chống nộp trùng. W1 đã có code/test; W4 có unit tests nhưng chưa kiểm thử trình duyệt với API thật. W0 cần đối chiếu dữ liệu hiện hành trước triển khai; snapshot lịch sử không thay thế bước này.
 2. Hoàn thiện các mục còn mở của giai đoạn 0: CI build/test, backup/restore có thử phục hồi, staging và những khoảng trống về validation/session/file.
 3. Chọn phạm vi tiếp theo của giai đoạn 2 hoặc 3 dựa trên quyết định sản phẩm; không tự coi roadmap đề xuất là phạm vi đã duyệt.
 

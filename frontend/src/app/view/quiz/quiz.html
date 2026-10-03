@@ -185,9 +185,12 @@
                   <p class="mt-2 text-sm">{{ quiz.questionCount }} câu · {{ quiz.totalPoints | number:'1.0-2' }} điểm · {{ quiz.attemptCount }} lượt làm · {{ quiz.durationMinutes }} phút</p>
                 </div>
                 <div class="flex gap-2">
+                  @if (!quiz.isPublished && quiz.attemptCount === 0) {
+                    <button type="button" tfButton variant="outline" size="sm" [disabled]="creating || loadingEditor" (click)="editQuiz(quiz)">Sửa bản nháp</button>
+                  }
                   <button type="button" tfButton variant="outline" size="sm" (click)="viewResults(quiz)">Kết quả</button>
-                  <button type="button" tfButton variant="secondary" size="sm" (click)="togglePublish(quiz)">
-                    {{ quiz.isPublished ? 'Ẩn đề' : 'Publish' }}
+                  <button type="button" tfButton variant="secondary" size="sm" [disabled]="creating || loadingEditor" (click)="togglePublish(quiz)">
+                    {{ quiz.isPublished ? 'Ẩn đề' : 'Công bố' }}
                   </button>
                 </div>
               </div>
@@ -239,7 +242,12 @@
     }
   </div>
   <aside tfCard tone="white" padding="lg" class="h-fit space-y-5">
-    <div><p class="eyebrow text-primary">Trình soạn đề</p><h2 class="mt-1 text-xl font-extrabold">Tạo bài test mới</h2></div>
+    <div class="flex items-start justify-between gap-3">
+      <div><p class="eyebrow text-primary">Trình soạn đề</p><h2 class="mt-1 text-xl font-extrabold">{{ editingQuizId != null ? 'Sửa bản nháp' : 'Tạo bài test mới' }}</h2></div>
+      <button type="button" tfButton variant="ghost" size="sm" [disabled]="creating || loadingEditor" (click)="newDraft()">Soạn đề mới</button>
+    </div>
+    @if (loadingEditor) { <p role="status" class="text-sm text-ink-muted">Đang tải bản nháp…</p> }
+    <fieldset class="space-y-5" [disabled]="creating || loadingEditor">
     <tf-field label="Tên bài test" [required]="true"><input tfInput [(ngModel)]="quizDraft.title" /></tf-field>
     <tf-field label="Mô tả"><textarea tfInput rows="3" [(ngModel)]="quizDraft.description"></textarea></tf-field>
     <tf-field label="Lớp học" [required]="true">
@@ -248,8 +256,8 @@
     }</select>
   </tf-field>
   <div class="grid grid-cols-2 gap-3">
-    <tf-field label="Mở bài" [required]="true"><input tfInput type="datetime-local" [(ngModel)]="quizDraft.openAt" /></tf-field>
-    <tf-field label="Đóng bài" [required]="true"><input tfInput type="datetime-local" [(ngModel)]="quizDraft.closeAt" /></tf-field>
+    <tf-field label="Mở bài" [required]="true"><input tfInput type="datetime-local" step="1" [(ngModel)]="quizDraft.openAt" /></tf-field>
+    <tf-field label="Đóng bài" [required]="true"><input tfInput type="datetime-local" step="1" [(ngModel)]="quizDraft.closeAt" /></tf-field>
   </div>
   <tf-field label="Thời lượng (phút)" [required]="true"><input tfInput type="number" min="1" max="480" [(ngModel)]="quizDraft.durationMinutes" /></tf-field>
   <label class="flex items-center gap-3 rounded-md bg-muted p-4"><input type="checkbox" [(ngModel)]="quizDraft.showAnswersAfterGrading" /><span class="font-semibold">Cho xem đáp án sau khi chấm xong</span></label>
@@ -296,10 +304,11 @@
       }
     </article>
   }
-  <button type="button" tfButton variant="primary" [block]="true" [disabled]="creating" (click)="createQuiz()">
-    {{ creating ? 'Đang tạo...' : 'Lưu bản nháp' }}
+  <button type="button" tfButton variant="primary" [block]="true" [disabled]="creating || loadingEditor" (click)="createQuiz()">
+    {{ creating ? 'Đang lưu...' : editingQuizId != null ? 'Lưu thay đổi bản nháp' : 'Lưu bản nháp' }}
   </button>
   <p class="text-xs text-ink-muted">Đề được lưu ở trạng thái nháp. Tổng điểm được tính từ điểm của từng câu hỏi.</p>
+  </fieldset>
 </aside>
 </div>
 }

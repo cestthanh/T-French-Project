@@ -56,6 +56,7 @@ public class QuizzesController(
             quiz.Id, quiz.Title, quiz.Description, quiz.ClassId, quiz.CourseId,
             quiz.OpenAt, quiz.CloseAt, quiz.DurationMinutes, quiz.MaxAttempts,
             quiz.IsPublished, quiz.ShowAnswersAfterGrading,
+            AttemptCount = await db.QuizAttempts.CountAsync(a => a.QuizId == id),
             Questions = quiz.Questions.Select(q => new
             {
                 q.Id, q.Type, q.Content, q.Points, q.Order, q.Explanation, q.Rubric,
