@@ -8,6 +8,8 @@
 
 **Cập nhật 03/10:** W2 đã nối sửa quiz nháp từ UI, khóa sửa đề đã công bố/có lượt làm và cảnh báo nội dung chưa lưu. Bài tập có nháp, sửa/xem trước/công bố/đóng nhận bài; migration giữ bài cũ đã công bố và lịch sử nộp/chấm. Xem trước quiz theo giao diện học viên và E2E ba vai trò vẫn còn mở.
 
+W3 đã có unique index và thử lại POST an toàn cho lượt 1; chưa có mốc mở/hạn khóa hay cấp lượt mới. Migration không tự xóa/ghép duplicate lịch sử; nếu dữ liệu hiện hành có cặp bài tập/học viên trùng, phải giải quyết và kiểm tra riêng trước deploy.
+
 Đọc [đánh giá hiện trạng](LEARNING_ASSESSMENT_PLAN.md) trước khi thực hiện. Kế hoạch này chuyển các khoảng trống đã tìm thấy thành luồng người dùng, thay đổi cụ thể và tiêu chí nghiệm thu. `Course` là chương trình học; `CourseClass` là lớp cụ thể có giáo viên và học viên. Đề xuất mặc định: nội dung học tập riêng được giao theo lớp; tài liệu chung toàn khóa vẫn có chỗ đứng rõ ràng.
 
 ## 1. Tham khảo và lựa chọn thiết kế

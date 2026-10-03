@@ -19,6 +19,7 @@ Các dòng trên mô tả code hiện tại và những ô đã đánh dấu tro
 - Nội dung theo lớp yêu cầu Enrollment Active đúng lớp. Quyền quản lý bài tập thuộc giáo viên lớp hoặc Admin; tài liệu vẫn do người tải lên hoặc Admin sửa/xóa.
 - API sửa thông thường không đổi lớp bài tập hoặc bỏ/đổi lớp đã gắn vào tài liệu, tránh client cũ làm rộng quyền do thiếu `ClassId`. Phân loại lại dữ liệu cũ và chính sách production cần xử lý riêng.
 - Ngày 03/10: bài tập API tạo mới là nháp; giáo viên xem trước rồi công bố, sau đó có thể đóng nhận bài. Chỉ sửa nháp chưa có bài nộp; bài có bài nộp được giữ để chấm/xem kết quả, không xóa. Migration gán Published cho bài tập cũ; DueDate chưa tự khóa nhận bài cho tới khi triển khai chính sách deadline W3.
+- Bài tập giữ một lượt nộp như API trước đó, nay có ràng buộc database; request thử lại cùng file/link/ghi chú trả kết quả đã lưu. Khác nội dung bị từ chối, không ghi đè bài hay điểm. `AttemptNumber` chuẩn bị schema cho tương lai, không tự bật quyền nộp lại.
 
 ## Còn cần quyết định
 

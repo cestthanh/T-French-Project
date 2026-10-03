@@ -22,6 +22,7 @@ export interface Assignment {
 
 export interface Submission {
   id: number;
+  attemptNumber: number;
   submittedAt: string;
   grade?: number;
   feedback?: string;

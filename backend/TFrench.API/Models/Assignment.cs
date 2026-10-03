@@ -49,6 +49,7 @@ public class Submission
 
     public int StudentId { get; set; }
     public User? Student { get; set; }
+    public int AttemptNumber { get; set; } = 1;
 
     /// <summary>External link the student pasted instead of uploading.</summary>
     public string? FileUrl { get; set; }
@@ -60,7 +61,7 @@ public class Submission
 
     public string? Note { get; set; }
 
-    public int? Grade { get; set; }          // 0-100
+    public int? Grade { get; set; }          // 0-10
     public string? Feedback { get; set; }
 
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;

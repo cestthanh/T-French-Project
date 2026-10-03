@@ -15,7 +15,7 @@ Các lệnh kiểm tra và phạm vi phủ nằm ở đây; kết quả chạy g
 
 ## Phạm vi kiểm thử hiện có
 
-- `backend/TFrench.API.Tests/LearningWorkflowTests.cs` có bảy integration tests dùng database SQLite tạm: health, worker chốt quiz hết giờ, ghi danh miễn phí/trả phí và chuyển lead, luồng quiz gồm bảo mật đáp án/autosave/chấm điểm, quyền tài liệu/bài tập giữa hai lớp cùng khóa, sửa nháp và khóa sửa quiz, vòng đời nháp/công bố/đóng bài tập. Ca quyền kiểm tra cả danh sách, chi tiết, tải file, nộp/chấm/xóa bài, Enrollment Pending và ngăn sửa làm mất phạm vi lớp. File test dùng thư mục tạm riêng.
+- `backend/TFrench.API.Tests/LearningWorkflowTests.cs` có tám integration tests dùng database SQLite tạm: health, worker chốt quiz hết giờ, ghi danh miễn phí/trả phí và chuyển lead, luồng quiz gồm bảo mật đáp án/autosave/chấm điểm, quyền tài liệu/bài tập giữa hai lớp cùng khóa, sửa nháp và khóa sửa quiz, vòng đời nháp/công bố/đóng bài tập, nộp đồng thời/thử lại an toàn. Ca quyền kiểm tra cả danh sách, chi tiết, tải file, nộp/chấm/xóa bài, Enrollment Pending và ngăn sửa làm mất phạm vi lớp. Ca nộp bài kiểm tra cả unique index và giữ bài/file/điểm cũ. File test dùng thư mục tạm riêng.
 - `backend/tests/` có ba smoke suites cho file, lead và blog. Chúng cần API đang chạy và dữ liệu mẫu Development; xem README của thư mục đó trước khi chạy.
 - `frontend/src/app/view/quiz/quiz.spec.ts` kiểm tra cuộc đua autosave, nộp/quay lại trong lúc lưu, lỗi lưu và xung đột hai tab. Repository vẫn chưa có browser E2E hoặc workflow CI.
 - `frontend/src/app/view/quiz/quiz-authoring.spec.ts` kiểm tra sửa nháp giữ giờ/câu hỏi/đáp án, lỗi lưu giữ nội dung, cảnh báo rời trang và xung đột công bố từ phiên khác.

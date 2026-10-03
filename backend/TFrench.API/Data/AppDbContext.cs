@@ -72,6 +72,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Submission>()
+            .HasIndex(s => new { s.AssignmentId, s.StudentId, s.AttemptNumber })
+            .IsUnique();
+
+        modelBuilder.Entity<Submission>()
             .HasOne(s => s.File)
             .WithMany()
             .HasForeignKey(s => s.FileId)

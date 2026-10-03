@@ -513,6 +513,60 @@ public sealed class LearningWorkflowTests
             $"/api/assignments/{id}/submit", new { note = "After close" })).StatusCode);
     }
 
+    [Fact]
+    public async Task AssignmentSubmit_ConcurrentRetriesKeepOneAttemptAndNeverOverwriteWork()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        var teacherToken = await LoginAsync(client, "teacher@tfrench.vn", "Teacher@123");
+        var classId = (await GetJsonAsync(client, "/api/courses/1"))
+            .GetProperty("classes")[0].GetProperty("id").GetInt32();
+        var studentToken = await RegisterAsync(client, UniqueEmail("retry"));
+        Authorize(client, studentToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            "/api/courses/1/enroll", new { classId })).StatusCode);
+        var workFile = await UploadTextAsync(client, "my-answer.txt");
+        Authorize(client, teacherToken);
+        var assignment = await ReadJsonAsync(await client.PostAsJsonAsync("/api/assignments", new
+        {
+            title = "Retry homework", courseId = 1, classId, dueDate = DateTime.UtcNow.AddDays(3),
+        }));
+        var id = assignment.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/assignments/{id}/publish", new { })).StatusCode);
+        Authorize(client, studentToken);
+        var body = new { note = "Original answer", fileId = workFile.Id };
+        var responses = await Task.WhenAll(
+            client.PostAsJsonAsync($"/api/assignments/{id}/submit", body),
+            client.PostAsJsonAsync($"/api/assignments/{id}/submit", body));
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+        var first = await ReadJsonAsync(responses[0]);
+        var second = await ReadJsonAsync(responses[1]);
+        var submissionId = first.GetProperty("id").GetInt32();
+        var studentId = first.GetProperty("studentId").GetInt32();
+        Assert.Equal(submissionId, second.GetProperty("id").GetInt32());
+        Assert.Equal(1, first.GetProperty("attemptNumber").GetInt32());
+        Assert.Equal(workFile.PublicId, second.GetProperty("file").GetProperty("publicId").GetGuid());
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync(
+            $"/api/assignments/{id}/submit", new { note = "Different answer" })).StatusCode);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(1, await db.Submissions.CountAsync(s => s.AssignmentId == id && s.StudentId == studentId));
+            db.Submissions.Add(new Submission { AssignmentId = id, StudentId = studentId, AttemptNumber = 1 });
+            await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        }
+
+        Authorize(client, teacherToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            $"/api/assignments/{id}/submissions/{submissionId}/grade", new { grade = 8 })).StatusCode);
+        Authorize(client, studentToken);
+        var retried = await ReadJsonAsync(await client.PostAsJsonAsync($"/api/assignments/{id}/submit", body));
+        Assert.Equal(submissionId, retried.GetProperty("id").GetInt32());
+        Assert.Equal(8, retried.GetProperty("grade").GetInt32());
+        Assert.Equal("Original answer", retried.GetProperty("note").GetString());
+    }
+
     private static async Task<(int Id, Guid PublicId)> UploadTextAsync(HttpClient client, string name)
     {
         using var content = new MultipartFormDataContent();

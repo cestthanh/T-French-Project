@@ -21,6 +21,7 @@ Chi tiết và lịch sử triển khai nằm trong `DE_XUAT_PHAT_TRIEN_DU_AN.md
 
 ## Bằng chứng kiểm tra gần nhất
 
+- Ngày 03/10/2026: W3 bổ sung `AttemptNumber=1` và unique index `(AssignmentId, StudentId, AttemptNumber)`. POST lặp cùng nội dung trả bài cũ; nội dung khác trả 409, giữ file/điểm/giờ nộp. Backend SDK 10: **8/8 integration tests pass**, gồm request đồng thời và kiểm tra ràng buộc DB; frontend production build: **thành công**. Migration `20261003023614_UniqueAssignmentAttempt` trên bản sao lịch sử giữ 8 bài nộp lượt 1 và toàn bộ cột dữ liệu gốc. Bản sao có một duplicate giả lập: migration bị từ chối, schema/dữ liệu nghiệp vụ được rollback, không xóa bản ghi. Cần kiểm kê duplicate trên dữ liệu hiện hành trước deploy. Mốc mở/hạn khóa/nộp trễ và cấp lượt mới chưa triển khai.
 - Ngày 03/10/2026: W2 bài tập có `Draft → Published → Closed`, sửa nháp/xem trước/công bố/đóng nhận bài từ UI; nháp không hiện ở danh sách/chi tiết/file của học viên. Bài tập có bài nộp không được xóa; công bố/đóng có audit. Backend SDK 10: **7/7 integration tests pass**, frontend production build: **thành công**. Migration `20261003022936_AssignmentLifecycle` trên bản sao snapshot cũ: `quick_check=ok`, 0 lỗi FK, các cột dữ liệu gốc của 12 Resource/1 Assignment/8 Submission/29 StoredFile không đổi; bài tập cũ giữ `Published`, `ClassId=null`. Chưa thử trên dữ liệu production hoặc E2E trình duyệt.
 - Ngày 03/10/2026: W2 nối sửa quiz nháp vào trình soạn, giữ câu hỏi/đáp án/rubric và chuyển UTC sang giờ địa phương rồi lưu lại; chặn sửa đề đã công bố/có lượt làm, cảnh báo thay đổi chưa lưu. Backend container SDK 10: **6/6 integration tests pass**; frontend ChromeHeadless: **8/8 unit tests pass**; production build: **thành công**. Đây chưa phải browser E2E với API thật.
 - Ngày 02/10/2026: W1 bổ sung `ClassId` nullable cho tài liệu/bài tập và `LearningAccessService`; form chọn lớp/phạm vi thay ô nhập ID; client bỏ `ClassId` khi sửa không làm rộng quyền. `dotnet test TFrench.sln --verbosity minimal` trong container SDK 10: **5/5 integration tests pass**, gồm hai lớp cùng khóa, quyền file/nộp/chấm/xóa và Pending. `npm run build -- --configuration production`: **thành công** sau thay đổi form.
@@ -35,7 +36,7 @@ Chi tiết và lịch sử triển khai nằm trong `DE_XUAT_PHAT_TRIEN_DU_AN.md
 
 ## Việc tiếp theo
 
-1. Tiếp tục W3: mốc thời gian phía server và chống nộp trùng; hoàn thiện xem trước quiz và E2E ba vai trò. W2 đã có form chọn phạm vi, sửa quiz nháp và luồng nháp/công bố/đóng bài tập. W4 có unit tests nhưng chưa kiểm thử trình duyệt với API thật. W0 cần đối chiếu dữ liệu hiện hành trước triển khai; snapshot lịch sử không thay thế bước này.
+1. Tiếp tục W3: chốt chính sách nộp trễ và triển khai mốc mở/hạn khóa phía server (chống nộp trùng đã có); hoàn thiện xem trước quiz và E2E ba vai trò. W2 đã có form chọn phạm vi, sửa quiz nháp và luồng nháp/công bố/đóng bài tập. W4 có unit tests nhưng chưa kiểm thử trình duyệt với API thật. W0 cần đối chiếu dữ liệu hiện hành trước triển khai; snapshot lịch sử không thay thế bước này.
 2. Hoàn thiện các mục còn mở của giai đoạn 0: CI build/test, backup/restore có thử phục hồi, staging và những khoảng trống về validation/session/file.
 3. Chọn phạm vi tiếp theo của giai đoạn 2 hoặc 3 dựa trên quyết định sản phẩm; không tự coi roadmap đề xuất là phạm vi đã duyệt.
 

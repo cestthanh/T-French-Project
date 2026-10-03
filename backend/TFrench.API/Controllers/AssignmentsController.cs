@@ -74,7 +74,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
             Course = a.Course == null ? null : new { a.Course.Id, a.Course.Title },
             Submissions = visible.Select(s => new
             {
-                s.Id, s.StudentId, s.Note, s.FileUrl, s.Grade, s.Feedback,
+                s.Id, s.StudentId, s.AttemptNumber, s.Note, s.FileUrl, s.Grade, s.Feedback,
                 s.SubmittedAt, s.GradedAt,
                 File = Describe(s.File),
                 // Projected by hand rather than serialising the User entity —
@@ -262,14 +262,13 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
         // Enrolment was previously unchecked here: any student could hand work
         // in to any course's assignment just by knowing its id.
         if (!await access.CanSeeAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
+        // Check already submitted
+        var existing = await db.Submissions.Include(s => s.File)
+            .FirstOrDefaultAsync(s => s.AssignmentId == id && s.StudentId == CurrentUserId && s.AttemptNumber == 1);
+        if (existing != null)
+            return ExistingSubmissionResult(existing, dto);
         if (assignment.Status != AssignmentStatus.Published)
             return Conflict(new { message = "Bài tập đã đóng nhận bài." });
-
-        // Check already submitted
-        var existing = await db.Submissions
-            .FirstOrDefaultAsync(s => s.AssignmentId == id && s.StudentId == CurrentUserId);
-        if (existing != null)
-            return Conflict(new { message = "Bạn đã nộp bài cho bài tập này." });
 
         if (!await OwnsFileAsync(dto.FileId))
             return BadRequest(new { message = "File nộp bài không hợp lệ." });
@@ -283,15 +282,24 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
             FileId = dto.FileId
         };
         db.Submissions.Add(submission);
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // A second request can pass the read above before the first saves.
+            // Only an existing attempt from this student resolves that race;
+            // other database failures still propagate to the error handler.
+            db.ChangeTracker.Clear();
+            existing = await db.Submissions.Include(s => s.File)
+                .SingleOrDefaultAsync(s => s.AssignmentId == id && s.StudentId == CurrentUserId && s.AttemptNumber == 1);
+            if (existing == null) throw;
+            return ExistingSubmissionResult(existing, dto);
+        }
 
         await db.Entry(submission).Reference(s => s.File).LoadAsync();
-        return Ok(new
-        {
-            submission.Id, submission.StudentId, submission.Note, submission.FileUrl,
-            submission.Grade, submission.Feedback, submission.SubmittedAt, submission.GradedAt,
-            File = Describe(submission.File)
-        });
+        return Ok(DescribeSubmission(submission));
     }
 
     // ── GRADE submission (Teacher/Admin only) ─────────────────────────────────
@@ -329,7 +337,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
             .Where(s => s.StudentId == CurrentUserId)
             .OrderByDescending(s => s.SubmittedAt)
             .Select(s => new {
-                s.Id, s.SubmittedAt, s.Grade, s.Feedback, s.GradedAt, s.Note, s.FileUrl,
+                s.Id, s.AttemptNumber, s.SubmittedAt, s.Grade, s.Feedback, s.GradedAt, s.Note, s.FileUrl,
                 File = s.File == null ? null : new {
                     s.File.PublicId, s.File.OriginalName, s.File.ContentType, s.File.SizeBytes
                 },
@@ -361,6 +369,21 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
     private static object? Describe(StoredFile? f) => f == null ? null : new
     {
         f.PublicId, f.OriginalName, f.ContentType, f.SizeBytes
+    };
+
+    private IActionResult ExistingSubmissionResult(Submission existing, SubmitAssignmentDto dto)
+    {
+        var fileUrl = string.IsNullOrWhiteSpace(dto.FileUrl) ? null : dto.FileUrl;
+        return existing.FileId == dto.FileId && existing.FileUrl == fileUrl && existing.Note == dto.Note
+            ? Ok(DescribeSubmission(existing))
+            : Conflict(new { message = "Bạn đã nộp bài. Bài cũ được giữ nguyên; hiện chưa cho phép nộp lại." });
+    }
+
+    private static object DescribeSubmission(Submission submission) => new
+    {
+        submission.Id, submission.StudentId, submission.AttemptNumber, submission.Note, submission.FileUrl,
+        submission.Grade, submission.Feedback, submission.SubmittedAt, submission.GradedAt,
+        File = Describe(submission.File),
     };
 
     private static bool IsHttpUrl(string value) =>
