@@ -672,6 +672,7 @@ Pipeline tối thiểu:
 - [x] Quiz/Test MVP cho phép một lượt làm.
 - [x] Quiz/Test dùng thang điểm linh hoạt, tính từ tổng điểm các câu hỏi.
 - Quy tắc triển khai 02/10/2026: UI giao bài mới theo lớp, tài liệu chọn lớp/khóa/mọi tài khoản đăng nhập; migration giữ phạm vi khóa cho dữ liệu cũ. Không đổi lớp qua API sửa bài tập thông thường; tài liệu đã gắn lớp cũng không được bỏ/đổi lớp. Đây là giới hạn kỹ thuật hiện tại, các chính sách nộp trễ/nộp lại vẫn chưa chốt.
+- Quy tắc triển khai 03/10/2026: bài tập mới lưu nháp rồi công bố; chỉ sửa nháp, đóng nhận bài giữ kết quả; không xóa bài đã có bài nộp. Migration giữ bài cũ Published. Nháp/công bố chưa thay thế chính sách deadline/nộp trễ ở W3.
 - [ ] Chính sách nộp trễ, hủy lịch và no-show là gì?
 - [ ] Ai được viết, duyệt và publish blog?
 

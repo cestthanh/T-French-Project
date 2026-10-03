@@ -94,6 +94,7 @@ public static class DataSeeder
         {
             db.Assignments.Add(new Assignment
             {
+                Status = AssignmentStatus.Published,
                 Title       = "Bài tập 1: Tự giới thiệu bằng tiếng Pháp",
                 Description = "Viết đoạn văn 5–10 câu tự giới thiệu bản thân",
                 DueDate     = DateTime.UtcNow.AddDays(7),

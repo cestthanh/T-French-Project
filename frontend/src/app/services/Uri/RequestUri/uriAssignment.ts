@@ -8,6 +8,8 @@ export class uriAssignment {
   static DETAIL = (id: number) => `${uriConfig.ASSIGNMENT}/${id}`;
   static UPDATE = (id: number) => `${uriConfig.ASSIGNMENT}/${id}`;
   static DELETE = (id: number) => `${uriConfig.ASSIGNMENT}/${id}`;
+  static PUBLISH = (id: number) => `${uriConfig.ASSIGNMENT}/${id}/publish`;
+  static CLOSE = (id: number) => `${uriConfig.ASSIGNMENT}/${id}/close`;
   static SUBMIT = (id: number) => `${uriConfig.ASSIGNMENT}/${id}/submit`;
   static GRADE = (assignmentId: number, submissionId: number) =>
     `${uriConfig.ASSIGNMENT}/${assignmentId}/submissions/${submissionId}/grade`;

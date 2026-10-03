@@ -11,6 +11,7 @@
   <!-- ══ HEADER: solid colour block ═══════════════════════════════════════ -->
   <div tfCard [tone]="isOverdue(assignment.dueDate) ? 'danger-soft' : 'primary'" padding="lg" class="mb-8">
     <h1 class="text-3xl font-extrabold tracking-heading sm:text-4xl">{{ assignment.title }}</h1>
+    <p class="mt-3 font-semibold">{{ assignment.status === 'Draft' ? 'Bản nháp — học viên chưa thấy bài này' : assignment.status === 'Closed' ? 'Đã đóng nhận bài' : 'Đã công bố' }}</p>
     <div class="mt-5 flex flex-wrap items-center gap-x-8 gap-y-3">
       <span class="flex items-center gap-2 font-semibold"
         [ngClass]="isOverdue(assignment.dueDate) ? 'text-ink-soft' : 'text-white/90'">
@@ -43,9 +44,34 @@
       </div>
     }
   </div>
+  @if (canGrade && assignment.status === 'Draft') {
+    <section tfCard tone="white" padding="lg" class="mb-8">
+      <h2 class="text-xl font-extrabold">Sửa bản nháp</h2>
+      <p class="mt-2 text-sm text-ink-muted">Phần phía trên là nội dung đã lưu để xem trước. Lưu thay đổi rồi công bố cho lớp.</p>
+      <form [formGroup]="editForm" (ngSubmit)="saveDraft()" class="mt-5">
+        <fieldset class="space-y-5" [disabled]="savingDraft || changingStatus">
+          <tf-field label="Tiêu đề" [required]="true" for="draft-title"><input id="draft-title" tfInput formControlName="title" /></tf-field>
+          <tf-field label="Yêu cầu bài tập" for="draft-description"><textarea id="draft-description" tfInput rows="4" formControlName="description"></textarea></tf-field>
+          <tf-field label="Hạn nộp" [required]="true" for="draft-due"><input id="draft-due" tfInput type="datetime-local" step="1" formControlName="dueDate" /></tf-field>
+          <tf-file-upload label="Thay đề bài đính kèm (tuỳ chọn)" hint="File hiện tại được giữ nếu không tải file mới."
+            (fileChange)="draftAttachment = $event"></tf-file-upload>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" tfButton variant="secondary" [disabled]="editForm.invalid || savingDraft || changingStatus">{{ savingDraft ? 'Đang lưu...' : 'Lưu thay đổi' }}</button>
+            <button type="button" tfButton variant="primary" [disabled]="savingDraft || changingStatus" (click)="publish()">{{ changingStatus ? 'Đang công bố...' : 'Công bố cho lớp' }}</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  }
+  @if (canGrade && assignment.status === 'Published') {
+    <button type="button" tfButton variant="secondary" class="mb-8" [disabled]="changingStatus" (click)="close()">Đóng nhận bài</button>
+  }
   <!-- ══ STUDENT: submit ═════════════════════════════════════════════════ -->
   @if (!canGrade) {
-    @if (!mySubmission) {
+    @if (!mySubmission && assignment.status === 'Closed') {
+      <p role="status" class="mb-6 rounded-md bg-muted p-4">Bài tập đã đóng nhận bài.</p>
+    }
+    @if (!mySubmission && assignment.status === 'Published') {
       <div tfCard tone="white" padding="lg">
         <h2 class="text-xl font-extrabold tracking-heading">Nộp bài</h2>
         <form [formGroup]="submitForm" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">

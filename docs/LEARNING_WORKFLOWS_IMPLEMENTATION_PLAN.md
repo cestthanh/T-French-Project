@@ -6,7 +6,7 @@
 
 **Phạm vi:** Tài liệu, bài tập có file/link/ghi chú, quiz online, chấm và trả kết quả cho học viên theo lớp.
 
-**Cập nhật 03/10:** W2 đã nối sửa quiz nháp từ UI với kiểm tra đề đã công bố/có lượt làm và cảnh báo nội dung chưa lưu. Nháp/công bố bài tập và xem trước vẫn còn mở.
+**Cập nhật 03/10:** W2 đã nối sửa quiz nháp từ UI, khóa sửa đề đã công bố/có lượt làm và cảnh báo nội dung chưa lưu. Bài tập có nháp, sửa/xem trước/công bố/đóng nhận bài; migration giữ bài cũ đã công bố và lịch sử nộp/chấm. Xem trước quiz theo giao diện học viên và E2E ba vai trò vẫn còn mở.
 
 Đọc [đánh giá hiện trạng](LEARNING_ASSESSMENT_PLAN.md) trước khi thực hiện. Kế hoạch này chuyển các khoảng trống đã tìm thấy thành luồng người dùng, thay đổi cụ thể và tiêu chí nghiệm thu. `Course` là chương trình học; `CourseClass` là lớp cụ thể có giáo viên và học viên. Đề xuất mặc định: nội dung học tập riêng được giao theo lớp; tài liệu chung toàn khóa vẫn có chỗ đứng rõ ràng.
 

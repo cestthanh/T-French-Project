@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TFrench.API.Models;
 
+public enum AssignmentStatus { Draft, Published, Closed }
+
 public class Assignment
 {
     [Key]
@@ -21,6 +23,7 @@ public class Assignment
     public StoredFile? Attachment { get; set; }
 
     public DateTime DueDate { get; set; }
+    public AssignmentStatus Status { get; set; } = AssignmentStatus.Draft;
 
     public int CourseId { get; set; }
     public Course? Course { get; set; }

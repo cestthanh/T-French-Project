@@ -18,6 +18,7 @@ Các dòng trên mô tả code hiện tại và những ô đã đánh dấu tro
 - Bài tập mới trên UI chọn lớp; tài liệu chọn lớp, khóa hoặc mọi tài khoản đăng nhập. API vẫn đọc nội dung cũ không có `ClassId` theo phạm vi khóa; migration không tự gán lớp cho dữ liệu lịch sử.
 - Nội dung theo lớp yêu cầu Enrollment Active đúng lớp. Quyền quản lý bài tập thuộc giáo viên lớp hoặc Admin; tài liệu vẫn do người tải lên hoặc Admin sửa/xóa.
 - API sửa thông thường không đổi lớp bài tập hoặc bỏ/đổi lớp đã gắn vào tài liệu, tránh client cũ làm rộng quyền do thiếu `ClassId`. Phân loại lại dữ liệu cũ và chính sách production cần xử lý riêng.
+- Ngày 03/10: bài tập API tạo mới là nháp; giáo viên xem trước rồi công bố, sau đó có thể đóng nhận bài. Chỉ sửa nháp chưa có bài nộp; bài có bài nộp được giữ để chấm/xem kết quả, không xóa. Migration gán Published cho bài tập cũ; DueDate chưa tự khóa nhận bài cho tới khi triển khai chính sách deadline W3.
 
 ## Còn cần quyết định
 

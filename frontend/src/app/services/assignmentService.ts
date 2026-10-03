@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Assignment, CreateAssignmentRequest, Submission, SubmitAssignmentRequest } from 'src/app/interface';
+import { Assignment, AssignmentStatus, CreateAssignmentRequest, Submission, SubmitAssignmentRequest } from 'src/app/interface';
 import { uriAssignment } from './Uri/RequestUri/uriAssignment';
 
 @Injectable({ providedIn: 'root' })
@@ -22,12 +22,20 @@ export class AssignmentService {
     return this.http.post<Assignment>(uriAssignment.CREATE, data);
   }
 
-  update(id: number, data: any): Observable<Assignment> {
+  update(id: number, data: CreateAssignmentRequest): Observable<Assignment> {
     return this.http.put<Assignment>(uriAssignment.UPDATE(id), data);
   }
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(uriAssignment.DELETE(id));
+  }
+
+  publish(id: number): Observable<{ status: AssignmentStatus }> {
+    return this.http.post<{ status: AssignmentStatus }>(uriAssignment.PUBLISH(id), {});
+  }
+
+  close(id: number): Observable<{ status: AssignmentStatus }> {
+    return this.http.post<{ status: AssignmentStatus }>(uriAssignment.CLOSE(id), {});
   }
 
   /**

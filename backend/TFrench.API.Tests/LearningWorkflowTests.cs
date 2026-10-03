@@ -340,6 +340,8 @@ public sealed class LearningWorkflowTests
             {
                 title = "Edited resource", isPublic = false, courseId = 1,
             })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            $"/api/assignments/{assignmentId}/publish", new { })).StatusCode);
 
         Authorize(client, studentBToken);
         var resourcesB = await GetJsonAsync(client, "/api/resources");
@@ -451,6 +453,64 @@ public sealed class LearningWorkflowTests
         detail = await GetJsonAsync(client, $"/api/quizzes/manage/{quizId}");
         Assert.Equal("Edited draft", detail.GetProperty("title").GetString());
         Assert.Equal(1, detail.GetProperty("attemptCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task AssignmentDraft_IsHiddenUntilPublished_AndClosingPreservesWork()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
+        var teacherToken = await LoginAsync(client, "teacher@tfrench.vn", "Teacher@123");
+        var classId = (await GetJsonAsync(client, "/api/courses/1"))
+            .GetProperty("classes")[0].GetProperty("id").GetInt32();
+        var studentToken = await RegisterAsync(client, UniqueEmail("homework"));
+        Authorize(client, studentToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            "/api/courses/1/enroll", new { classId })).StatusCode);
+        Authorize(client, teacherToken);
+        var brief = await UploadTextAsync(client, "draft-brief.txt");
+        var dueDate = DateTime.UtcNow.AddDays(3);
+        var created = await ReadJsonAsync(await client.PostAsJsonAsync("/api/assignments", new
+        {
+            title = "Homework draft", courseId = 1, classId, dueDate, attachmentId = brief.Id,
+        }));
+        var id = created.GetProperty("id").GetInt32();
+        Assert.Equal("Draft", created.GetProperty("status").GetString());
+
+        Authorize(client, studentToken);
+        Assert.DoesNotContain((await GetJsonAsync(client, "/api/assignments")).EnumerateArray(),
+            a => a.GetProperty("id").GetInt32() == id);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/api/assignments/{id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"/api/files/{brief.PublicId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync(
+            $"/api/assignments/{id}/submit", new { note = "Too early" })).StatusCode);
+
+        Authorize(client, teacherToken);
+        var edit = new { title = "Homework ready", courseId = 1, classId, dueDate };
+        Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync($"/api/assignments/{id}", edit)).StatusCode);
+        var preview = await GetJsonAsync(client, $"/api/assignments/{id}");
+        Assert.Equal("Homework ready", preview.GetProperty("title").GetString());
+        Assert.Equal(brief.PublicId, preview.GetProperty("attachment").GetProperty("publicId").GetGuid());
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/assignments/{id}/publish", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/assignments/{id}/publish", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PutAsJsonAsync($"/api/assignments/{id}", edit)).StatusCode);
+
+        Authorize(client, studentToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/files/{brief.PublicId}")).StatusCode);
+        var submission = await ReadJsonAsync(await client.PostAsJsonAsync($"/api/assignments/{id}/submit", new { note = "My work" }));
+        var submissionId = submission.GetProperty("id").GetInt32();
+        Authorize(client, teacherToken);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/assignments/{id}/close", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.DeleteAsync($"/api/assignments/{id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/api/assignments/{id}/publish", new { })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
+            $"/api/assignments/{id}/submissions/{submissionId}/grade", new { grade = 9, feedback = "Bien" })).StatusCode);
+        Authorize(client, studentToken);
+        var closed = await GetJsonAsync(client, $"/api/assignments/{id}");
+        Assert.Equal("Closed", closed.GetProperty("status").GetString());
+        Assert.Equal(9, closed.GetProperty("submissions")[0].GetProperty("grade").GetInt32());
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync(
+            $"/api/assignments/{id}/submit", new { note = "After close" })).StatusCode);
     }
 
     private static async Task<(int Id, Guid PublicId)> UploadTextAsync(HttpClient client, string name)

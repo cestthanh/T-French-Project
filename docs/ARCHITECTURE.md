@@ -30,6 +30,7 @@ Trong development, `ng serve` chạy frontend riêng và gọi API tại `http:/
 
 - `Course` là chương trình học; `CourseClass` là lớp/cohort của chương trình; `Enrollment` gắn học viên với lớp và có trạng thái.
 - `Assignment` và `Submission` phục vụ giao/nộp/chấm bài; `Resource` và `StoredFile` phục vụ tài liệu và file.
+- Bài tập có trạng thái `Draft`, `Published`, `Closed`: chỉ nháp được sửa; học viên thấy bài đã công bố/đóng theo quyền lớp, chỉ nộp khi Published. Các endpoint công bố/đóng ghi audit; bài tập đã có bài nộp không bị xóa qua API.
 - `Resource`/`Assignment` có `ClassId` nullable: có lớp thì kiểm tra Enrollment Active đúng lớp; dữ liệu cũ không có lớp giữ phạm vi khóa. `LearningAccessService` dùng chung quy tắc cho danh sách, chi tiết, file và quyền nộp/chấm bài. Tài liệu `IsPublic` dành cho mọi tài khoản đăng nhập.
 - `Quiz` gắn với lớp; `QuizAttempt` là lượt làm của học viên. `QuizDeadlineWorker` chốt các lượt hết giờ ở phía server.
 - `ContactLead` lưu yêu cầu tư vấn và có thể liên kết tới học viên/ghi danh. `AuditLog` lưu các hành động nhạy cảm được instrument trong code.

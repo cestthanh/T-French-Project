@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AssignmentService } from 'src/app/services/assignmentService';
 import { Assignment, ManagedClass, Submission, UploadedFile } from 'src/app/interface';
 import { AuthService } from 'src/app/services/authService';
@@ -34,6 +35,7 @@ export class AssignmentList implements OnInit {
     private fb: FormBuilder,
     private toast: ToastService,
     private classService: ClassService,
+    private router: Router,
   ) {
     this.createForm = this.fb.group({
       title: ['', Validators.required],
@@ -75,21 +77,26 @@ export class AssignmentList implements OnInit {
     if (this.createForm.invalid || this.saving) return;
     const selectedClass = this.classes.find(c => c.id === this.createForm.value.classId);
     if (!selectedClass) { this.toast.error('Vui lòng chọn lớp học.'); return; }
+    const due = new Date(this.createForm.value.dueDate);
+    if (!Number.isFinite(due.getTime()) || due <= new Date()) {
+      this.toast.error('Hạn nộp phải ở tương lai.'); return;
+    }
     this.saving = true;
     const dto = {
       ...this.createForm.value,
       courseId: selectedClass.courseId,
-      dueDate: new Date(this.createForm.value.dueDate).toISOString(),
+      dueDate: due.toISOString(),
       attachmentId: this.attachment?.id,
     };
     this.assignmentService.create(dto).subscribe({
-      next: () => {
+      next: created => {
         this.saving = false;
         this.showCreate = false;
         this.attachment = null;
         this.createForm.reset();
         this.load();
-        this.toast.success('Đã tạo bài tập!');
+        this.toast.success('Đã lưu nháp. Hãy xem trước rồi công bố cho lớp.');
+        this.router.navigate(['/dashboard/assignments', created.id]);
       },
       error: err => {
         this.saving = false;
@@ -102,7 +109,7 @@ export class AssignmentList implements OnInit {
     if (!confirm('Xoá bài tập này?')) return;
     this.assignmentService.delete(id).subscribe({
       next: () => { this.load(); this.toast.success('Đã xoá bài tập.'); },
-      error: () => this.toast.error('Lỗi khi xoá bài tập.'),
+      error: err => this.toast.error(err?.error?.message ?? 'Lỗi khi xoá bài tập.'),
     });
   }
 

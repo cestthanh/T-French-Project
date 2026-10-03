@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UploadedFile } from 'src/app/interface';
 import { AssignmentService } from 'src/app/services/assignmentService';
 import { AuthService } from 'src/app/services/authService';
@@ -24,6 +24,10 @@ export class AssignmentDetail implements OnInit {
   gradeValue = 0;
   feedbackValue = '';
   submitForm: FormGroup;
+  editForm: FormGroup;
+  savingDraft = false;
+  changingStatus = false;
+  draftAttachment: UploadedFile | null = null;
 
   submitMode: SubmitMode = 'upload';
   uploadedFile: UploadedFile | null = null;
@@ -34,6 +38,7 @@ export class AssignmentDetail implements OnInit {
 
   /** A submission needs something in it: a file, a link, or at least a note. */
   get canSubmit(): boolean {
+    if (this.assignment?.status !== 'Published' || this.mySubmission) return false;
     if (this.submitMode === 'upload') return this.uploadedFile != null;
     return !!this.submitForm.value.fileUrl?.trim() || !!this.submitForm.value.note?.trim();
   }
@@ -46,14 +51,29 @@ export class AssignmentDetail implements OnInit {
     private toast: ToastService,
   ) {
     this.submitForm = this.fb.group({ note: [''], fileUrl: [''] });
+    this.editForm = this.fb.group({
+      title: ['', [Validators.required, Validators.maxLength(200)]],
+      description: [''], dueDate: ['', Validators.required],
+    });
   }
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  private load(): void {
+    this.loading = true;
     const id = +this.route.snapshot.paramMap.get('id')!;
     this.assignmentService.getById(id).subscribe({
       next: data => {
         this.assignment = data;
         this.loading = false;
+        const date = new Date(data.dueDate);
+        this.editForm.reset({
+          title: data.title, description: data.description ?? '',
+          dueDate: new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 19),
+        });
+        this.draftAttachment = null;
         if (!this.canGrade) {
           this.mySubmission =
             data.submissions?.find((s: any) => s.studentId === this.auth.currentUser?.id) ?? null;
@@ -63,6 +83,62 @@ export class AssignmentDetail implements OnInit {
         this.loading = false;
         this.toast.error('Không tải được bài tập.');
       },
+    });
+  }
+
+  canLeave(): boolean {
+    return !this.hasUnsavedDraft() || confirm('Bản nháp bài tập chưa lưu. Bỏ thay đổi để rời trang?');
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  warnBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.hasUnsavedDraft()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  }
+
+  private hasUnsavedDraft(): boolean {
+    return this.canGrade && this.assignment?.status === 'Draft' &&
+      (this.editForm.dirty || this.draftAttachment != null || this.savingDraft || this.changingStatus);
+  }
+
+  saveDraft(): void {
+    if (this.savingDraft || this.changingStatus || this.editForm.invalid || this.assignment?.status !== 'Draft') return;
+    const due = new Date(this.editForm.value.dueDate);
+    if (!Number.isFinite(due.getTime()) || due <= new Date()) {
+      this.toast.error('Hạn nộp phải ở tương lai.'); return;
+    }
+    this.savingDraft = true;
+    this.assignmentService.update(this.assignment.id, {
+      ...this.editForm.value,
+      dueDate: due.toISOString(), courseId: this.assignment.courseId,
+      classId: this.assignment.classId, attachmentId: this.draftAttachment?.id,
+    }).subscribe({
+      next: () => { this.savingDraft = false; this.toast.success('Đã lưu bản nháp.'); this.load(); },
+      error: err => { this.savingDraft = false; this.toast.error(err?.error?.message ?? 'Không lưu được bản nháp.'); },
+    });
+  }
+
+  publish(): void {
+    if (this.changingStatus || this.savingDraft || this.assignment?.status !== 'Draft') return;
+    if (this.editForm.dirty || this.draftAttachment) {
+      this.toast.error('Hãy lưu thay đổi trước khi công bố.'); return;
+    }
+    if (!confirm(`Công bố "${this.assignment.title}" cho ${this.assignment.className || 'toàn khoá'}?`)) return;
+    this.changingStatus = true;
+    this.assignmentService.publish(this.assignment.id).subscribe({
+      next: result => { this.changingStatus = false; this.assignment.status = result.status; this.toast.success('Đã công bố bài tập.'); },
+      error: err => { this.changingStatus = false; this.toast.error(err?.error?.message ?? 'Không công bố được bài tập.'); },
+    });
+  }
+
+  close(): void {
+    if (this.changingStatus || this.assignment?.status !== 'Published') return;
+    if (!confirm('Đóng nhận bài? Học viên vẫn xem được bài tập và kết quả đã có.')) return;
+    this.changingStatus = true;
+    this.assignmentService.close(this.assignment.id).subscribe({
+      next: result => { this.changingStatus = false; this.assignment.status = result.status; this.toast.success('Đã đóng nhận bài.'); },
+      error: err => { this.changingStatus = false; this.toast.error(err?.error?.message ?? 'Không đóng được bài tập.'); },
     });
   }
 

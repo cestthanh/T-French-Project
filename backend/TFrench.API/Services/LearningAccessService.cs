@@ -39,11 +39,11 @@ public class LearningAccessService(AppDbContext db)
         return role switch
         {
             "Admin" => assignments,
-            "Student" => assignments.Where(a => a.ClassId != null
+            "Student" => assignments.Where(a => a.Status != AssignmentStatus.Draft && (a.ClassId != null
                 ? db.Enrollments.Any(e => e.ClassId == a.ClassId && e.StudentId == userId &&
                     e.Status == EnrollmentStatus.Active)
                 : db.Enrollments.Any(e => e.CourseId == a.CourseId && e.StudentId == userId &&
-                    e.Status == EnrollmentStatus.Active)),
+                    e.Status == EnrollmentStatus.Active))),
             "Teacher" => assignments.Where(a => a.ClassId != null
                 ? db.CourseClasses.Any(c => c.Id == a.ClassId && c.TeacherId == userId)
                 : db.Courses.Any(c => c.Id == a.CourseId && c.TeacherId == userId)),

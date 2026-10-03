@@ -43,7 +43,7 @@
       <div class="flex flex-wrap justify-end gap-3">
         <button type="button" tfButton variant="secondary" size="md" (click)="showCreate = false">Huỷ</button>
         <button type="submit" tfButton variant="primary" size="md" [disabled]="createForm.invalid || saving">
-          {{ saving ? 'Đang lưu...' : 'Tạo bài tập' }}
+          {{ saving ? 'Đang lưu...' : 'Lưu nháp & xem trước' }}
         </button>
       </div>
     </form>
@@ -68,6 +68,7 @@
             <div class="flex items-start justify-between gap-4">
               <div class="min-w-0">
                 <span tfBadge tone="primary-soft" [square]="true">{{ a.course }}</span>
+                <span tfBadge tone="muted" [square]="true" class="ml-2">{{ a.status === 'Draft' ? 'Bản nháp' : a.status === 'Closed' ? 'Đã đóng' : 'Đã công bố' }}</span>
                 <p class="mt-2 text-sm text-ink-muted">{{ a.className || 'Dùng chung toàn khoá' }}</p>
                 <h3 class="mt-3 text-xl font-bold leading-snug tracking-heading">{{ a.title }}</h3>
               </div>
@@ -76,10 +77,12 @@
                   <a [routerLink]="['/dashboard/assignments', a.id]" tfButton variant="ghost" size="icon" aria-label="Xem bài nộp">
                     <lucide-icon name="clipboard-check" class="h-5 w-5"></lucide-icon>
                   </a>
+                  @if (!a.submissionCount) {
                   <button type="button" (click)="onDelete(a.id)" tfButton variant="ghost" size="icon"
                     class="!text-danger hover:!bg-danger-soft" aria-label="Xoá bài tập">
                     <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
                   </button>
+                  }
                 </div>
               }
             </div>
@@ -102,6 +105,7 @@
                   <lucide-icon name="users" class="h-4 w-4"></lucide-icon>
                   {{ a.submissionCount }} bài nộp
                 </span>
+                <a [routerLink]="['/dashboard/assignments', a.id]" tfButton variant="primary" size="sm">{{ a.status === 'Draft' ? 'Xem trước & công bố' : 'Quản lý bài tập' }}</a>
               }
               @if (!canManage) {
                 <a [routerLink]="['/dashboard/assignments', a.id]"

@@ -1,10 +1,13 @@
 import { StoredFileInfo } from './file';
 
+export type AssignmentStatus = 'Draft' | 'Published' | 'Closed';
+
 export interface Assignment {
   id: number;
   title: string;
   description?: string;
   dueDate: string;
+  status: AssignmentStatus;
   course: string;
   courseId: number;
   classId?: number;

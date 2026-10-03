@@ -13,7 +13,7 @@ namespace TFrench.API.Controllers;
 [Route("api/[controller]")]
 [Authorize]
 public class AssignmentsController(AppDbContext db, FileStorageService storage,
-    LearningAccessService access) : ControllerBase
+    LearningAccessService access, AuditService audit) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
@@ -31,7 +31,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
             query = query.Where(a => a.CourseId == courseId.Value);
 
         var result = await query.OrderByDescending(a => a.DueDate).Select(a => new {
-            a.Id, a.Title, a.Description, a.DueDate, a.AttachmentUrl,
+            a.Id, a.Title, a.Description, a.DueDate, a.Status, a.AttachmentUrl,
             Attachment = a.Attachment == null ? null : new {
                 a.Attachment.PublicId, a.Attachment.OriginalName,
                 a.Attachment.ContentType, a.Attachment.SizeBytes
@@ -67,7 +67,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
 
         return Ok(new
         {
-            a.Id, a.Title, a.Description, a.DueDate, a.CourseId, a.ClassId, a.CreatedAt,
+            a.Id, a.Title, a.Description, a.DueDate, a.Status, a.CourseId, a.ClassId, a.CreatedAt,
             ClassName = a.Class == null ? null : a.Class.Name,
             a.AttachmentUrl,
             Attachment = Describe(a.Attachment),
@@ -110,7 +110,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
         var assignment = new Assignment
         {
             Title = dto.Title, Description = dto.Description,
-            DueDate = dto.DueDate, CourseId = dto.CourseId, ClassId = dto.ClassId,
+            DueDate = dto.DueDate.ToUniversalTime(), CourseId = dto.CourseId, ClassId = dto.ClassId,
             AttachmentUrl = string.IsNullOrWhiteSpace(dto.AttachmentUrl) ? null : dto.AttachmentUrl,
             AttachmentId = dto.AttachmentId
         };
@@ -120,6 +120,7 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
         {
             assignment.Id, assignment.Title, assignment.Description,
             assignment.DueDate, assignment.CourseId, assignment.ClassId,
+            assignment.Status,
             assignment.AttachmentUrl, assignment.AttachmentId, assignment.CreatedAt,
         });
     }
@@ -133,6 +134,8 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
                                     .FirstOrDefaultAsync(x => x.Id == id);
         if (a == null) return NotFound();
         if (!await access.CanManageAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
+        if (a.Status != AssignmentStatus.Draft || await db.Submissions.AnyAsync(s => s.AssignmentId == id))
+            return Conflict(new { message = "Chỉ sửa được bài tập nháp chưa có bài nộp." });
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Title.Trim().Length > 200)
             return BadRequest(new { message = "Tiêu đề bài tập phải có từ 1 đến 200 ký tự." });
         if (dto.CourseId != a.CourseId)
@@ -141,13 +144,15 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
             return BadRequest(new { message = "Lớp không thuộc khoá hoặc không thuộc giáo viên hiện tại." });
         if (dto.ClassId != a.ClassId)
             return BadRequest(new { message = "Không thể đổi phạm vi lớp của bài tập sau khi tạo." });
+        if (dto.DueDate <= DateTime.UtcNow)
+            return BadRequest(new { message = "Hạn nộp phải ở tương lai." });
         if (dto.AttachmentId != null && !string.IsNullOrWhiteSpace(dto.AttachmentUrl))
             return BadRequest(new { message = "Chỉ được chọn một file hoặc một link đính kèm." });
         if (!string.IsNullOrWhiteSpace(dto.AttachmentUrl) && !IsHttpUrl(dto.AttachmentUrl))
             return BadRequest(new { message = "Link đính kèm phải là URL http/https hợp lệ." });
 
         a.Title = dto.Title; a.Description = dto.Description;
-        a.DueDate = dto.DueDate; a.ClassId = dto.ClassId;
+        a.DueDate = dto.DueDate.ToUniversalTime(); a.ClassId = dto.ClassId;
 
         // Only replace the brief when a new one is supplied — see the same rule
         // in ResourcesController.Update.
@@ -172,9 +177,43 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
         await db.SaveChangesAsync();
         return Ok(new
         {
-            a.Id, a.Title, a.Description, a.DueDate, a.CourseId, a.ClassId,
+            a.Id, a.Title, a.Description, a.DueDate, a.Status, a.CourseId, a.ClassId,
             a.AttachmentUrl, a.AttachmentId, a.CreatedAt,
         });
+    }
+
+    [HttpPost("{id}/publish")]
+    [Authorize(Roles = "Admin,Teacher")]
+    public async Task<IActionResult> Publish(int id)
+    {
+        var assignment = await db.Assignments.FindAsync(id);
+        if (assignment == null) return NotFound();
+        if (!await access.CanManageAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
+        if (assignment.Status == AssignmentStatus.Published) return Ok(new { assignment.Status });
+        if (assignment.Status != AssignmentStatus.Draft)
+            return Conflict(new { message = "Bài tập đã đóng không thể công bố lại." });
+        if (assignment.DueDate <= DateTime.UtcNow)
+            return BadRequest(new { message = "Hạn nộp đã qua. Hãy sửa bản nháp trước khi công bố." });
+        assignment.Status = AssignmentStatus.Published;
+        audit.Record("AssignmentPublished", "Assignment", id);
+        await db.SaveChangesAsync();
+        return Ok(new { assignment.Status });
+    }
+
+    [HttpPost("{id}/close")]
+    [Authorize(Roles = "Admin,Teacher")]
+    public async Task<IActionResult> Close(int id)
+    {
+        var assignment = await db.Assignments.FindAsync(id);
+        if (assignment == null) return NotFound();
+        if (!await access.CanManageAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
+        if (assignment.Status == AssignmentStatus.Closed) return Ok(new { assignment.Status });
+        if (assignment.Status != AssignmentStatus.Published)
+            return Conflict(new { message = "Chỉ đóng được bài tập đã công bố." });
+        assignment.Status = AssignmentStatus.Closed;
+        audit.Record("AssignmentClosed", "Assignment", id);
+        await db.SaveChangesAsync();
+        return Ok(new { assignment.Status });
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
@@ -190,10 +229,11 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
         if (a == null) return NotFound();
         if (!await access.CanManageAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
 
-        // Take the file rows with the assignment: once the submissions are gone
-        // nothing points at those bytes, and they would sit on disk forever.
-        var files = a.Submissions.Select(s => s.File).Append(a.Attachment)
-                     .Where(f => f != null).Cast<StoredFile>().ToList();
+        if (a.Submissions.Count > 0)
+            return Conflict(new { message = "Bài tập đã có bài nộp không thể xóa. Hãy đóng nhận bài để giữ lịch sử." });
+
+        // Only assignments without submissions can reach this branch.
+        var files = a.Attachment == null ? new List<StoredFile>() : [a.Attachment];
 
         db.Assignments.Remove(a);
         await db.SaveChangesAsync();
@@ -222,6 +262,8 @@ public class AssignmentsController(AppDbContext db, FileStorageService storage,
         // Enrolment was previously unchecked here: any student could hand work
         // in to any course's assignment just by knowing its id.
         if (!await access.CanSeeAssignmentAsync(id, CurrentUserId, CurrentRole)) return Forbid();
+        if (assignment.Status != AssignmentStatus.Published)
+            return Conflict(new { message = "Bài tập đã đóng nhận bài." });
 
         // Check already submitted
         var existing = await db.Submissions
