@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    image: tfrench-staging:local
+    ports:
+      - "127.0.0.1:8088:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__Key: ${TFRENCH_STAGING_JWT_KEY:?Set a staging JWT secret}
+      BootstrapAdmin__Email: ${TFRENCH_STAGING_ADMIN_EMAIL:?Set staging admin email}
+      BootstrapAdmin__Password: ${TFRENCH_STAGING_ADMIN_PASSWORD:?Set staging admin password}
+      BootstrapAdmin__FullName: Staging Administrator
+    volumes:
+      - staging_data:/data
+    restart: unless-stopped
+volumes:
+  staging_data:

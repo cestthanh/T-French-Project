@@ -1,0 +1,75 @@
+name: Validate T-French
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet test backend/TFrench.sln --verbosity minimal
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm audit --omit=dev
+      - run: npm test -- --watch=false --browsers=ChromeHeadless
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+      - run: npm run build -- --configuration production
+  browser-and-restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -s ops -p 'test_*.py' -v
+      - run: docker build -t tfrench-e2e .
+      - run: python ops/staging_smoke.py --image tfrench-e2e
+      - name: Start isolated demo server
+        run: |
+          mkdir -p "$RUNNER_TEMP/tfrench-e2e-data"
+          chmod 777 "$RUNNER_TEMP/tfrench-e2e-data"
+          docker run -d --name tfrench-e2e -p 127.0.0.1:8089:8080 -v "$RUNNER_TEMP/tfrench-e2e-data:/data" -e ASPNETCORE_ENVIRONMENT=Development -e DemoData__Enabled=true -e Frontend__ServeInDevelopment=true tfrench-e2e
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8089/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs tfrench-e2e
+          exit 1
+      - run: npm ci && npx playwright install --with-deps chromium && npm run test:e2e
+        working-directory: frontend
+      - name: Rehearse database and upload restore
+        run: |
+          docker stop tfrench-e2e
+          python ops/data_backup.py backup --database "$RUNNER_TEMP/tfrench-e2e-data/tfrench.db" --uploads "$RUNNER_TEMP/tfrench-e2e-data/uploads" --destination "$RUNNER_TEMP/tfrench-backup" --service-stopped
+          python ops/data_backup.py restore --bundle "$RUNNER_TEMP/tfrench-backup" --destination "$RUNNER_TEMP/tfrench-restored"
+      - name: Logs and cleanup
+        if: always()
+        run: |
+          docker logs tfrench-e2e || true
+          docker rm -f tfrench-e2e || true

@@ -11,6 +11,11 @@
 **/*.db-shm
 **/*.db-wal
 **/storage
+**/playwright-report
+**/test-results
+**/__pycache__
+.env*
+backups
 *.user
 *.suo
 DE_XUAT_PHAT_TRIEN_DU_AN.md

@@ -1,0 +1,183 @@
+import { test, expect, Page, Browser } from '@playwright/test';
+
+const localTime = (date: Date) => new Date(date.getTime() + 7 * 3600000).toISOString().slice(0, 19);
+async function actor(browser: Browser) {
+  const context = await browser.newContext({ timezoneId: 'Asia/Bangkok', baseURL: process.env.TFRENCH_E2E_URL || 'http://127.0.0.1:8089' });
+  return context.newPage();
+}
+async function login(page: Page, email: string, password: string) {
+  page.on('dialog', dialog => dialog.accept());
+  await page.goto('/auth/login');
+  await page.locator('#login-email').fill(email);
+  await page.locator('#login-password').fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard(?:\/admin)?$/);
+}
+
+test('Admin enrolls a learner; teacher publishes, grades and grants a second attempt; learner keeps both results', async ({ browser, request }) => {
+  const unique = Date.now().toString();
+  const email = `e2e-${unique}@example.test`;
+  const name = `Learner ${unique}`;
+  const registered = await request.post('/api/auth/register', { data: { fullName: name, email, password: 'Testing@123' } });
+  expect(registered.ok()).toBeTruthy();
+  const adminLogin = await request.post('/api/auth/login', { data: { email: 'admin@tfrench.vn', password: 'Admin@123' } });
+  const headers = { Authorization: `Bearer ${(await adminLogin.json()).token}` };
+  const courseTitle = (await (await request.get("/api/courses/1")).json()).title;
+  const className = `Browser class ${unique}`;
+  const createdClass = await request.post('/api/classes', { headers, data: { name: className, courseId: 1, teacherId: 2,
+    startDate: new Date().toISOString(), endDate: new Date(Date.now() + 30 * 86400000).toISOString(), capacity: 10, modality: 'Online', status: 'Open' } });
+  expect(createdClass.ok()).toBeTruthy();
+  const cohort = (await createdClass.json()).id;
+  const admin = await actor(browser);
+  const teacher = await actor(browser);
+  const student = await actor(browser);
+  try {
+    await login(admin, 'admin@tfrench.vn', 'Admin@123');
+    await admin.goto('/dashboard/classes');
+    const card = admin.locator('[tfcard]').filter({ has: admin.getByRole('heading', { name: className, exact: true }) });
+    await card.getByRole('button', { name: 'Học viên', exact: true }).click();
+    const selection = admin.locator('select').filter({ has: admin.locator('option').filter({ hasText: email }) });
+    await selection.selectOption({ label: `${name} — ${email}` });
+    await admin.getByRole('button', { name: 'Thêm vào lớp', exact: true }).click();
+    await expect(admin.getByRole('cell').filter({ hasText: name })).toBeVisible();
+
+    await login(teacher, 'teacher@tfrench.vn', 'Teacher@123');
+    await teacher.goto('/dashboard/assignments');
+    await teacher.getByRole('button', { name: 'Tạo bài tập', exact: true }).click();
+    const title = `Browser homework ${unique}`;
+    await teacher.locator('#a-title').fill(title);
+    await teacher.locator('#a-desc').fill('Write a short introduction.');
+    await teacher.locator('#a-class').selectOption({ label: `${courseTitle} — ${className}` });
+    await teacher.locator('#a-due').fill(localTime(new Date(Date.now() + 86400000)));
+    await teacher.locator('input[type=file]').setInputFiles({ name: 'teacher-brief.txt', mimeType: 'text/plain', buffer: Buffer.from('Introduce yourself in French.') });
+    await expect(teacher.getByText('teacher-brief.txt', { exact: true })).toBeVisible();
+    await teacher.getByRole('button', { name: 'Lưu nháp & xem trước', exact: true }).click();
+    await expect(teacher).toHaveURL(/\/dashboard\/assignments\/\d+$/);
+    const assignmentPath = new URL(teacher.url()).pathname;
+    await login(student, email, 'Testing@123');
+    await student.goto('/dashboard/assignments');
+    await expect(student.getByRole('heading', { name: title, exact: true })).toHaveCount(0);
+    await teacher.getByRole('button', { name: 'Công bố cho lớp', exact: true }).click();
+    await expect(teacher.getByText('Đã công bố', { exact: true })).toBeVisible();
+    await student.goto(assignmentPath);
+    await expect(student.getByRole('heading', { name: title, exact: true })).toBeVisible();
+    await student.locator('input[type=file]').setInputFiles({ name: 'first-answer.txt', mimeType: 'text/plain', buffer: Buffer.from('Bonjour, je suis une élève.') });
+    await expect(student.getByText('first-answer.txt', { exact: true })).toBeVisible();
+    await student.locator('#sub-note').fill('First version');
+    await student.getByRole('button', { name: 'Nộp bài', exact: true }).click();
+    await expect(student.getByRole('heading', { name: /Đã nộp bài — lượt 1/ })).toBeVisible();
+    await teacher.reload();
+    await teacher.getByRole('button', { name: 'Chấm điểm', exact: true }).click();
+    await teacher.locator('input[type=number]').fill('8');
+    await teacher.getByPlaceholder('Bài viết tốt, chú ý chia động từ...').fill('Good first version');
+    await teacher.getByRole('button', { name: 'Lưu', exact: true }).click();
+    await expect(teacher.getByText('8/10', { exact: true })).toBeVisible();
+    await student.reload();
+    await expect(student.getByText('Good first version', { exact: true })).toHaveCount(0);
+    await teacher.getByRole('button', { name: 'Công bố kết quả', exact: true }).click();
+    await student.reload();
+    await expect(student.getByText('Good first version', { exact: true })).toBeVisible();
+    await student.goto('/dashboard/learning');
+    await student.locator('#learning-class').selectOption({ label: `${courseTitle} — ${className}` });
+    await expect(student.getByRole('region', { name: 'Bảng điểm theo lớp' }).getByText(/8\/10 · 80%/)).toBeVisible();
+    await teacher.getByRole('button', { name: 'Cấp lượt nộp lại', exact: true }).click();
+    await teacher.locator('textarea').fill('Improve the introduction');
+    await teacher.locator('input[type=datetime-local]').fill(localTime(new Date(Date.now() + 86400000)));
+    await teacher.getByRole('button', { name: 'Xác nhận cấp lượt', exact: true }).click();
+    await expect(teacher.getByText('Đã cấp lượt nộp lại.', { exact: true })).toBeVisible();
+    await student.goto(assignmentPath);
+    await expect(student.getByRole('heading', { name: 'Nộp bài — lượt 2', exact: true })).toBeVisible();
+    await student.getByRole('button', { name: 'Dán link', exact: true }).click();
+    await student.locator('#sub-note').fill('Improved second version');
+    await student.getByRole('button', { name: 'Nộp bài', exact: true }).click();
+    await expect(student.getByRole('heading', { name: 'Lịch sử lượt nộp', exact: true })).toBeVisible();
+    await expect(student.getByText('Good first version', { exact: true }).first()).toBeVisible();
+    await expect(student.getByText('First version', { exact: true }).first()).toBeVisible();
+  } finally { await admin.context().close(); await teacher.context().close(); await student.context().close(); }
+});
+
+test('Quiz preview, slow/error saves, reload and two tabs preserve answers before controlled release', async ({ browser, request }) => {
+  const teacher = await actor(browser);
+  const student = await actor(browser);
+  const email = `quiz-browser-${Date.now()}@example.test`;
+  const registration = await request.post('/api/auth/register', { data: { fullName: 'Quiz browser learner', email, password: 'Testing@123' } });
+  expect(registration.ok()).toBeTruthy();
+  const learnerHeaders = { Authorization: `Bearer ${(await registration.json()).token}` };
+  const course = await (await request.get('/api/courses/1')).json();
+  const cohort = course.classes[0];
+  expect((await request.post('/api/courses/1/enroll', { headers: learnerHeaders, data: { classId: cohort.id } })).ok()).toBeTruthy();
+  let secondTab: Page | undefined;
+  try {
+    await login(teacher, 'teacher@tfrench.vn', 'Teacher@123');
+    await teacher.goto('/dashboard/quizzes');
+    const editor = teacher.locator('aside');
+    const title = `Browser quiz ${Date.now()}`;
+    await editor.locator('input').first().fill(title);
+    await editor.locator('select').selectOption({ label: `${course.title} — ${cohort.name}` });
+    const close = Date.now() + 60_000;
+    await editor.locator('input[type=datetime-local]').nth(0).fill(localTime(new Date(Date.now() - 60_000)));
+    await editor.locator('input[type=datetime-local]').nth(1).fill(localTime(new Date(close)));
+    await editor.locator('input[type=number]').first().fill('1');
+    await editor.getByRole('button', { name: '+ Trắc nghiệm · Một đáp án', exact: true }).click();
+    await editor.getByPlaceholder('Nội dung câu hỏi').fill('Choose the French greeting');
+    await editor.getByPlaceholder('Lựa chọn 1').fill('Bonjour');
+    await editor.getByPlaceholder('Lựa chọn 2').fill('Goodbye');
+    await editor.getByRole('button', { name: 'Xem trước đề cho học viên', exact: true }).click();
+    await expect(editor.getByRole('region', { name: 'Xem trước đề cho học viên' }).getByText('Bonjour', { exact: true })).toBeVisible();
+    await editor.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
+    const card = teacher.locator('article').filter({ has: teacher.getByRole('heading', { name: title, exact: true }) });
+    await card.getByRole('button', { name: 'Công bố', exact: true }).click();
+    await expect(card.getByText('Đã publish', { exact: true })).toBeVisible();
+    await login(student, email, 'Testing@123');
+    await student.goto('/dashboard/quizzes');
+    const learnerCard = student.locator('article').filter({ has: student.getByRole('heading', { name: title, exact: true }) });
+    await learnerCard.getByRole('button', { name: 'Bắt đầu làm bài', exact: true }).click();
+    await expect(student.getByText('Choose the French greeting', { exact: true })).toBeVisible();
+    secondTab = await student.context().newPage();
+    secondTab.on('dialog', dialog => dialog.accept());
+    await secondTab.goto('/dashboard/quizzes');
+    await secondTab.locator('article').filter({ has: secondTab.getByRole('heading', { name: title, exact: true }) }).getByRole('button', { name: 'Tiếp tục làm', exact: true }).click();
+    await expect(secondTab.getByText('Choose the French greeting', { exact: true })).toBeVisible();
+    await student.getByRole('radio').nth(0).check();
+    await expect(student.getByText('Đã lưu trên máy chủ', { exact: true })).toBeVisible();
+    await secondTab.getByRole('radio').nth(1).check();
+    await expect(secondTab.getByRole('button', { name: 'Tải bản máy chủ', exact: true })).toBeVisible();
+    await expect(secondTab.getByRole('radio').nth(1)).toBeChecked();
+    await secondTab.getByRole('button', { name: 'Tải bản máy chủ', exact: true }).click();
+    await expect(secondTab.getByRole('radio').nth(0)).toBeChecked();
+    let started!: () => void;
+    const savingStarted = new Promise<void>(resolve => { started = resolve; });
+    let delayed = false;
+    await student.route('**/api/quizzes/attempts/*/answers', async route => {
+      if (!delayed) { delayed = true; started(); await new Promise(resolve => setTimeout(resolve, 1000)); }
+      await route.continue();
+    });
+    await student.getByRole('radio').nth(1).check();
+    await savingStarted;
+    await student.getByRole('radio').nth(0).check();
+    await expect(student.getByText('Đã lưu trên máy chủ', { exact: true })).toBeVisible();
+    await student.unroute('**/api/quizzes/attempts/*/answers');
+    await student.route('**/api/quizzes/attempts/*/answers', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
+    await student.getByRole('radio').nth(1).check();
+    await expect(student.getByRole('button', { name: 'Thử lưu lại', exact: true })).toBeVisible();
+    await expect(student.getByRole('radio').nth(1)).toBeChecked();
+    await student.unroute('**/api/quizzes/attempts/*/answers');
+    await student.getByRole('button', { name: 'Thử lưu lại', exact: true }).click();
+    await expect(student.getByText('Đã lưu trên máy chủ', { exact: true })).toBeVisible();
+    await student.getByRole('radio').nth(0).check();
+    await expect(student.getByText('Đã lưu trên máy chủ', { exact: true })).toBeVisible();
+    await student.reload();
+    await student.locator('article').filter({ has: student.getByRole('heading', { name: title, exact: true }) }).getByRole('button', { name: 'Tiếp tục làm', exact: true }).click();
+    await expect(student.getByRole('radio').nth(0)).toBeChecked();
+    await student.getByRole('button', { name: 'Nộp bài', exact: true }).click();
+    await expect(student.getByText('Đã nộp — chờ công bố kết quả', { exact: true })).toBeVisible();
+    await card.getByRole('button', { name: 'Kết quả', exact: true }).click();
+    await expect.poll(() => Date.now() >= close, { timeout: 65_000, intervals: [500] }).toBeTruthy();
+    await teacher.getByRole('button', { name: 'Công bố kết quả đã chấm', exact: true }).click();
+    await expect(teacher.getByText('Đã công bố kết quả.', { exact: true })).toBeVisible();
+    await student.getByRole('button', { name: 'Quay lại', exact: true }).click();
+    await student.locator('article').filter({ has: student.getByRole('heading', { name: title, exact: true }) }).getByRole('button', { name: 'Xem kết quả', exact: true }).click();
+    await expect(student.getByText('Kết quả đã công bố', { exact: false }).first()).toBeVisible();
+    await expect(student.getByText('Điểm:', { exact: true })).toBeVisible();
+  } finally { await teacher.context().close(); await student.context().close(); }
+});
