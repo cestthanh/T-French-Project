@@ -4,6 +4,8 @@
 **Trạng thái:** Đề xuất để thảo luận và lập kế hoạch; chưa phải phạm vi đã duyệt.
 **Phạm vi:** Kho tài liệu, giao/nộp/chấm bài tập, quiz online, quyền theo lớp và kết quả học tập.
 
+**Cập nhật 07/10:** Deadline/nộp trễ, preview quiz, release kết quả, lượt nộp lại, gradebook/overview và E2E/CI đã có code và kiểm tra cục bộ. Phần đánh giá bên dưới vẫn là ảnh chụp 01/10; xem [STATUS.md](STATUS.md) và [đặc tả đợt hoàn thiện](LEARNING_COMPLETION_EXECUTION.md) cho tình trạng mới.
+
 **Cập nhật 02/10/2026:** Các nhận định bên dưới là ảnh chụp 01/10. Code đã bổ sung quyền Resource/Assignment theo lớp, form chọn phạm vi và sửa autosave quiz; xem [STATUS.md](STATUS.md) cho bằng chứng kiểm tra và phần còn lại.
 
 Sơ đồ luồng riêng cho học viên, giáo viên, Admin và kế hoạch triển khai theo gói nằm trong [LEARNING_WORKFLOWS_IMPLEMENTATION_PLAN.md](LEARNING_WORKFLOWS_IMPLEMENTATION_PLAN.md).

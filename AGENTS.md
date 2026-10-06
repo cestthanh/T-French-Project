@@ -24,6 +24,8 @@
 
 Sau thay đổi đáng kể, cập nhật `docs/STATUS.md` với ngày, kết quả đã xác minh, việc đang làm và bước tiếp theo. Giữ mục này ngắn để phiên sau đọc nhanh.
 
+Đợt hoàn thiện 07/10 có phạm vi và chính sách tại [docs/LEARNING_COMPLETION_EXECUTION.md](docs/LEARNING_COMPLETION_EXECUTION.md). Hướng dẫn staging, audit dữ liệu hiện hành, backup/restore và E2E tại [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md).
+
 ## Decisions
 
 Đọc [docs/DECISIONS.md](docs/DECISIONS.md) để phân biệt quyết định đã ghi nhận với câu hỏi còn mở. Những quyết định quan trọng gồm tách Course/Class, chính sách ghi danh miễn phí/trả phí và Quiz một lượt.
@@ -41,4 +43,4 @@ Sau thay đổi đáng kể, cập nhật `docs/STATUS.md` với ngày, kết qu
 
 Đọc [docs/VALIDATION.md](docs/VALIDATION.md) để biết lệnh chạy, phạm vi test hiện có và khoảng trống kiểm thử. Backend nhắm `net10.0`; kết quả gần nhất có ngày nằm trong [docs/STATUS.md](docs/STATUS.md).
 
-Xem [docs/STATUS.md](docs/STATUS.md) cho kết quả gần nhất. Ghi rõ lệnh, kết quả và giới hạn môi trường; không đánh dấu một việc đã kiểm tra chỉ vì nhật ký cũ ghi thành công. Frontend hiện có test autosave quiz; chưa có browser E2E hoặc workflow CI trong repository.
+Xem [docs/STATUS.md](docs/STATUS.md) cho kết quả gần nhất. Ghi rõ lệnh, kết quả và giới hạn môi trường; không đánh dấu một việc đã kiểm tra chỉ vì nhật ký cũ ghi thành công. Frontend có unit tests quiz và browser E2E luồng học tập; repository có workflow CI. Phân biệt test cục bộ với run hosted; xem `docs/OPERATIONS_RUNBOOK.md` cho staging/backup/restore.

@@ -674,7 +674,9 @@ Pipeline tối thiểu:
 - Quy tắc triển khai 02/10/2026: UI giao bài mới theo lớp, tài liệu chọn lớp/khóa/mọi tài khoản đăng nhập; migration giữ phạm vi khóa cho dữ liệu cũ. Không đổi lớp qua API sửa bài tập thông thường; tài liệu đã gắn lớp cũng không được bỏ/đổi lớp. Đây là giới hạn kỹ thuật hiện tại, các chính sách nộp trễ/nộp lại vẫn chưa chốt.
 - Quy tắc triển khai 03/10/2026: bài tập mới lưu nháp rồi công bố; chỉ sửa nháp, đóng nhận bài giữ kết quả; không xóa bài đã có bài nộp. Migration giữ bài cũ Published. Nháp/công bố chưa thay thế chính sách deadline/nộp trễ ở W3.
 - Bài tập vẫn một lượt nộp; schema thêm AttemptNumber và ràng buộc unique. Thử lại cùng nội dung nhận bài đã lưu, nội dung khác không ghi đè. Cấp lượt mới và chính sách nộp trễ chưa bật.
-- [ ] Chính sách nộp trễ, hủy lịch và no-show là gì?
+- [x] Bài tập mới khóa theo hạn; giáo viên bật nộp trễ tới cutoff riêng, gắn nhãn trễ và không tự trừ điểm (07/10).
+- [x] Cấp lượt bài tập tiếp theo có lý do/hạn riêng; công bố kết quả chủ động; chấm lại cần release lại (07/10).
+- [ ] Chính sách hủy lịch và no-show cho booking là gì?
 - [ ] Ai được viết, duyệt và publish blog?
 
 ### Dữ liệu và quyền riêng tư
@@ -1338,3 +1340,17 @@ Phạm vi còn lại của Giai đoạn 2 (Module/Lesson, gradebook/rubric nâng
 - [x] Nâng backend và integration tests từ .NET 9 lên .NET 10 LTS; cập nhật ASP.NET Core/EF Core/Docker SDK/runtime lên 10.0.12 và NuGet vulnerability audit không phát hiện package dễ tổn thương.
 
 Còn cần chủ dự án thao tác trên tài khoản bên ngoài: push code lên GitHub, tạo Railway service, gắn volume `/data`, nhập secret, tạo domain và bật backup volume.
+
+### 07/10/2026 — Hoàn thiện luồng học tập và kiểm tra vận hành cục bộ
+
+- [x] OpenAt/DueDate/CutoffAt cho bài mới; kiểm tra UTC phía server, nhãn nộp trễ và transaction đóng/nộp.
+- [x] Grade/feedback nháp tới release, quiz release sau đóng; chấm lại thu hồi release. Migration giữ quyền xem điểm cũ.
+- [x] Grant lượt tiếp theo có lý do/cutoff và audit; giữ lịch sử nội dung/file/điểm, retry chỉ đúng lượt.
+- [x] Gradebook điểm gốc/thang/% và overview hoạt động/tài liệu theo lớp; Student chỉ xem dòng của mình.
+- [x] Preview quiz và sửa lỗi múi giờ API đọc từ SQLite; kết quả Resource tạo/sửa không serialize navigation User.
+- [x] Backend 14/14, frontend unit 8/8, Chromium E2E 2/2; gồm mạng chậm/503/reload/hai tab và vòng ba vai trò.
+- [x] Production Docker build/smoke và DB/upload restore cục bộ; byte tải qua API giống gốc; backup utility 2/2 tests.
+- [x] Migration trên bản sao lịch sử giữ nguyên dữ liệu gốc; không đưa database/file người dùng vào Git.
+- [x] Workflow CI và compose staging; Angular 21.2.24 vá router, audit dependency runtime 0.
+
+Chưa xác nhận run hosted GitHub Actions, snapshot production hiện hành, Railway hay backup định kỳ. Các mục này cần môi trường đích theo [runbook vận hành](docs/OPERATIONS_RUNBOOK.md). Audit dev dependencies và các mở rộng rubric/notification/ngoại lệ/quét file vẫn theo backlog.

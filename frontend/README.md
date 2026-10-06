@@ -19,6 +19,6 @@ Mở `http://localhost:4200`. Backend development cần chạy tại `http://loc
 npm run build -- --configuration production
 ```
 
-Đầu ra nằm trong `dist/frontend/browser/` và được Dockerfile chép vào `wwwroot` của ASP.NET Core. Test autosave quiz nằm trong `src/app/view/quiz/quiz.spec.ts`; chạy headless bằng `npm test -- --watch=false --browsers=ChromeHeadless`. Đây chưa phải bộ kiểm thử E2E cho toàn frontend.
+Đầu ra nằm trong `dist/frontend/browser/` và được Dockerfile chép vào `wwwroot` của ASP.NET Core. Test autosave quiz nằm trong `src/app/view/quiz/quiz.spec.ts`; chạy headless bằng `npm test -- --watch=false --browsers=ChromeHeadless`. Browser E2E cho luồng học tập nằm trong `e2e/learning.spec.ts`; chạy `npm run test:e2e` với container test tách biệt theo [runbook](../docs/OPERATIONS_RUNBOOK.md).
 
 Xem [README gốc](../README.md) để chạy cả hệ thống và [trạng thái dự án](../docs/STATUS.md) để biết kết quả kiểm tra gần nhất.

@@ -118,3 +118,5 @@ Sau đó mở `http://localhost:8080`. Dữ liệu vẫn nằm trong volume `tfr
 - `.dockerignore`: loại build output, database và upload khỏi Docker build context.
 - `DEPLOY_RAILWAY.md`: tài liệu này.
 - Backend tự migrate database, tạo Admin đầu tiên, phục vụ Angular và cung cấp `/health`.
+
+Quy trình staging, audit dữ liệu, backup/restore SQLite cùng upload đã thử cục bộ nằm tại [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md). Chưa xác nhận quy trình đó đã chạy trên Railway.

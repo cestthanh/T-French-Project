@@ -53,7 +53,7 @@ cd frontend
 npm run build -- --configuration production
 ```
 
-Các smoke tests Bash có hướng dẫn riêng tại [backend/tests/README.md](backend/tests/README.md). Frontend có test autosave quiz chạy bằng `npm test -- --watch=false --browsers=ChromeHeadless`; hiện chưa có browser E2E hoặc workflow CI. Xem [STATUS.md](docs/STATUS.md) để biết kết quả kiểm tra gần nhất và các giới hạn môi trường.
+Các smoke tests Bash có hướng dẫn riêng tại [backend/tests/README.md](backend/tests/README.md). Frontend có test autosave/sửa nháp quiz chạy bằng `npm test -- --watch=false --browsers=ChromeHeadless`; có browser E2E bằng Playwright và workflow CI trong `.github/workflows/validation.yml`. Xem [STATUS.md](docs/STATUS.md) để biết kết quả kiểm tra gần nhất và các giới hạn môi trường.
 
 ## Triển khai và tài liệu
 
@@ -66,3 +66,5 @@ Thiết kế giao diện ban đầu nằm trong [new_prompt_frontend.md](new_pro
 [AGENTS.md](AGENTS.md) là điểm vào với sáu mục: [Product intent](docs/PRODUCT_INTENT.md), [Architecture](docs/ARCHITECTURE.md), [Active plans](docs/STATUS.md), [Decisions](docs/DECISIONS.md), [Reliability](docs/RELIABILITY.md) và [Validation](docs/VALIDATION.md). Mỗi trang tóm tắt phần cần biết và dẫn tới nguồn chi tiết trong code hoặc tài liệu hiện có.
 
 Đánh giá riêng cho kho tài liệu, bài tập và quiz nằm trong [LEARNING_ASSESSMENT_PLAN.md](docs/LEARNING_ASSESSMENT_PLAN.md); sơ đồ luồng học viên/giáo viên/Admin và kế hoạch nâng cấp chi tiết nằm trong [LEARNING_WORKFLOWS_IMPLEMENTATION_PLAN.md](docs/LEARNING_WORKFLOWS_IMPLEMENTATION_PLAN.md).
+
+Staging Docker, E2E và backup/restore có hướng dẫn tại [OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md).

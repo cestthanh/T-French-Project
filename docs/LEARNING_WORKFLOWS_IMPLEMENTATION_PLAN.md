@@ -1,8 +1,10 @@
 # Luồng theo vai trò và kế hoạch nâng cấp phân hệ học tập
 
-**Rà soát:** 01/10/2026
+**Rà soát ban đầu:** 01/10/2026; cập nhật triển khai 07/10/2026.
 
 **Trạng thái:** Kế hoạch đang triển khai từng phần theo yêu cầu tiếp tục của chủ dự án. Ngày 02/10: W1 đã có quyền theo lớp và migration giữ dữ liệu cũ; W2 đã có form chọn lớp/phạm vi; W4 đã sửa autosave và có unit tests. W0 mới kiểm kê và thử migration trên snapshot cũ. Các chính sách còn mở, nháp/công bố bài tập, deadline/nộp lại và W5–W7 chưa hoàn tất. Bằng chứng và bước tiếp theo ở [STATUS.md](STATUS.md).
+
+**Cập nhật 07/10:** W2 đã có preview quiz và E2E; W3 có deadline/nộp trễ/grant; W5 có công bố điểm và gradebook; W6 có overview theo lớp, audit hành động và backup/staging tooling. Các ghi chú 02–03/10 dưới đây là lịch sử. Rubric cấu trúc, notification, quét file và W7 chưa trong đợt này. Chính sách đã áp dụng ở [DECISIONS.md](DECISIONS.md), bằng chứng ở [STATUS.md](STATUS.md).
 
 **Phạm vi:** Tài liệu, bài tập có file/link/ghi chú, quiz online, chấm và trả kết quả cho học viên theo lớp.
 
@@ -170,7 +172,7 @@ Thêm integration tests vào `backend/TFrench.API.Tests/` cho Resource, Assignme
 
 ## 7. Những quyết định cần chủ dự án chốt
 
-Các giá trị dưới đây là **mặc định đề xuất để lập kế hoạch**, chưa phải chính sách đã duyệt:
+Các giá trị dưới đây là đề xuất ban đầu. Ngày 07/10, chủ dự án yêu cầu thực hiện deadline/nộp trễ, grant và công bố điểm theo phương án đã đề xuất; chi tiết áp dụng tại [LEARNING_COMPLETION_EXECUTION.md](LEARNING_COMPLETION_EXECUTION.md). Ngoại lệ thời gian và retention vẫn cần chốt riêng:
 
 | Chủ đề | Mặc định đề xuất | Nếu chọn khác, phần bị ảnh hưởng |
 | --- | --- | --- |

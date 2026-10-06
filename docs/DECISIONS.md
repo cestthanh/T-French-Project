@@ -26,7 +26,7 @@ Các dòng trên mô tả code hiện tại và những ô đã đánh dấu tro
 | Chủ đề | Câu hỏi cần chốt trước khi mở rộng |
 | --- | --- |
 | Học offline/hybrid | Có quản lý phòng học và tài nguyên vật lý không? |
-| Bài tập và booking | Chính sách nộp trễ, hủy lịch, no-show là gì? |
+| Booking | Chính sách hủy lịch, no-show là gì? |
 | Blog | Ai được viết, duyệt và xuất bản? |
 | Dữ liệu | Thời hạn giữ lead, bài nộp, file, audit log; xử lý dữ liệu học viên dưới tuổi thành niên |
 | Liên lạc | Nhà cung cấp email, consent marketing và thông báo |
@@ -35,3 +35,15 @@ Các dòng trên mô tả code hiện tại và những ô đã đánh dấu tro
 Các câu hỏi này chưa được tự động giải quyết bởi việc có code hoặc hướng dẫn triển khai. Danh sách đầy đủ vẫn nằm trong [đề xuất](../DE_XUAT_PHAT_TRIEN_DU_AN.md), mục 14.
 
 Các câu hỏi chi tiết về phạm vi tài liệu/bài tập theo lớp, nộp trễ, nộp lại và công bố điểm được ghi trong [đánh giá phân hệ học tập](LEARNING_ASSESSMENT_PLAN.md) và [kế hoạch luồng vai trò](LEARNING_WORKFLOWS_IMPLEMENTATION_PLAN.md); chúng vẫn là đề xuất cho đến khi chủ dự án chốt.
+
+## Chính sách triển khai được chấp thuận ngày 07/10
+
+Theo yêu cầu hoàn thành các bước tiếp theo của chủ dự án:
+
+- Bài tập mới khóa khi hết hạn; giáo viên có thể bật nhận trễ đến cutoff riêng, không tự trừ điểm. Trước OpenAt và tại/sau CutoffAt server từ chối bài mới. Retry bài đã lưu vẫn trả cùng biên nhận.
+- Một lượt mặc định; giáo viên/Admin cấp lượt tiếp theo có lý do và deadline riêng. Giữ toàn bộ file, điểm và nội dung lượt trước. Grant không mở lại bài cho toàn lớp.
+- Điểm/feedback mới chờ công bố; chấm lại phải công bố lại. Quiz chỉ release sau CloseAt; đáp án/lời giải còn phụ thuộc ShowAnswersAfterGrading. Điểm lịch sử đã chấm giữ quyền xem qua migration.
+- Assignment giữ thang 0–10; quiz giữ tổng điểm câu hỏi. Bảng điểm hiển thị điểm gốc/max/% của lượt mới nhất; lịch sử tại bài tập. Chưa gộp các loại bài thành một điểm trung bình có trọng số.
+- Backup/restore đi kèm upload; ứng dụng dừng ghi khi chụp; restore luôn tạo đích mới và xác minh trước chuyển service. Staging Docker dùng secret/volume riêng.
+
+Đợt này không chốt retention, quét file, rubric cấu trúc, ngoại lệ thời gian quiz hay chính sách booking. Những dòng ghi 02–03/10 ở trên là lịch sử trước khi deadline/release/grant được bổ sung; xem [đặc tả đợt hoàn thiện](LEARNING_COMPLETION_EXECUTION.md).

@@ -7,8 +7,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Jwt__Key: ${TFRENCH_STAGING_JWT_KEY:?Set a staging JWT secret}
-      BootstrapAdmin__Email: ${TFRENCH_STAGING_ADMIN_EMAIL:?Set staging admin email}
-      BootstrapAdmin__Password: ${TFRENCH_STAGING_ADMIN_PASSWORD:?Set staging admin password}
+      BootstrapAdmin__Email: ${TFRENCH_STAGING_ADMIN_EMAIL:-}
+      BootstrapAdmin__Password: ${TFRENCH_STAGING_ADMIN_PASSWORD:-}
       BootstrapAdmin__FullName: Staging Administrator
     volumes:
       - staging_data:/data
