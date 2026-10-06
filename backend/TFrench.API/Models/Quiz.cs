@@ -65,6 +65,7 @@ public class QuizAttempt
     public DateTime? SubmittedAt { get; set; }
     public QuizAttemptStatus Status { get; set; } = QuizAttemptStatus.InProgress;
     public decimal? Score { get; set; }
+    public DateTime? ReleasedAt { get; set; }
     public int Version { get; set; }
     public ICollection<AttemptAnswer> Answers { get; set; } = [];
 }

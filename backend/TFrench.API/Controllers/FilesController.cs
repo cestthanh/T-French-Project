@@ -97,32 +97,14 @@ public class FilesController(AppDbContext db, FileStorageService storage,
         if (CurrentRole == "Admin") return true;
         if (file.UploadedById == CurrentUserId) return true;
 
-        // ── as course material ────────────────────────────────────────────────
-        var resource = await db.Resources.AsNoTracking()
-            .FirstOrDefaultAsync(r => r.FileId == file.Id);
-        if (resource != null)
-            return await access.CanSeeResourceAsync(resource.Id, CurrentUserId, CurrentRole);
-
-        // ── as an assignment brief ────────────────────────────────────────────
-        var assignment = await db.Assignments.AsNoTracking()
-            .FirstOrDefaultAsync(a => a.AttachmentId == file.Id);
-        if (assignment != null)
-            return await access.CanSeeAssignmentAsync(assignment.Id, CurrentUserId, CurrentRole);
-
-        // ── as a student's submission ─────────────────────────────────────────
-        // Only the author (already covered above) and the teacher who has to
-        // mark it. Other students on the same course must not see each other's
-        // work, so this requires management access to the assignment.
-        var submission = await db.Submissions.AsNoTracking()
-            .FirstOrDefaultAsync(s => s.FileId == file.Id);
-        if (submission != null)
-        {
-            if (submission.StudentId == CurrentUserId) return true;
-            return await access.CanManageAssignmentAsync(submission.AssignmentId, CurrentUserId, CurrentRole);
-        }
-
-        // Attached to nothing we recognise: refuse.
-        return false;
+        // A file can be reused by several records. Any authorized association
+        // grants access; an earlier private association cannot shadow a public one.
+        if (await access.VisibleResources(CurrentUserId, CurrentRole).AnyAsync(r => r.FileId == file.Id)) return true;
+        if (await access.VisibleAssignments(CurrentUserId, CurrentRole).AnyAsync(a => a.AttachmentId == file.Id)) return true;
+        if (await db.Submissions.AnyAsync(s => s.FileId == file.Id && s.StudentId == CurrentUserId)) return true;
+        if (CurrentRole is not ("Admin" or "Teacher")) return false;
+        return await db.Submissions.AnyAsync(s => s.FileId == file.Id &&
+            access.VisibleAssignments(CurrentUserId, CurrentRole).Any(a => a.Id == s.AssignmentId));
     }
 
     private object Describe(StoredFile f) => new

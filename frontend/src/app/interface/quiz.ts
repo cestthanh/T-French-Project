@@ -33,6 +33,7 @@ export interface QuizAttempt {
   startedAt: string;
   deadline: string;
   submittedAt?: string;
+  releasedAt?: string;
   score?: number;
   version: number;
   quiz: { id: number; title: string; description?: string; totalPoints: number };
@@ -105,6 +106,7 @@ export interface QuizResult {
   score?: number;
   startedAt: string;
   submittedAt?: string;
+  releasedAt?: string;
   essayAnswers: Array<{
     id: number;
     questionId: number;

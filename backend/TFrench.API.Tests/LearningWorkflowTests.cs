@@ -250,6 +250,13 @@ public sealed class LearningWorkflowTests
             JsonContent.Create(new { score = 7, feedback = "Tốt" }));
         Assert.Equal(HttpStatusCode.OK, gradeResponse.StatusCode);
 
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            (await db.Quizzes.FindAsync(quizId))!.CloseAt = DateTime.UtcNow.AddSeconds(-1);
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/quizzes/{quizId}/results/release", new { })).StatusCode);
         // Assert — objective questions plus essay support a teacher-defined total score.
         Authorize(client, studentToken);
         var final = await GetJsonAsync(client, $"/api/quizzes/attempts/{attemptId}");
@@ -505,6 +512,7 @@ public sealed class LearningWorkflowTests
         Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync($"/api/assignments/{id}/publish", new { })).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
             $"/api/assignments/{id}/submissions/{submissionId}/grade", new { grade = 9, feedback = "Bien" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/assignments/{id}/submissions/{submissionId}/release", new { })).StatusCode);
         Authorize(client, studentToken);
         var closed = await GetJsonAsync(client, $"/api/assignments/{id}");
         Assert.Equal("Closed", closed.GetProperty("status").GetString());
@@ -560,6 +568,7 @@ public sealed class LearningWorkflowTests
         Authorize(client, teacherToken);
         Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync(
             $"/api/assignments/{id}/submissions/{submissionId}/grade", new { grade = 8 })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync($"/api/assignments/{id}/submissions/{submissionId}/release", new { })).StatusCode);
         Authorize(client, studentToken);
         var retried = await ReadJsonAsync(await client.PostAsJsonAsync($"/api/assignments/{id}/submit", body));
         Assert.Equal(submissionId, retried.GetProperty("id").GetInt32());

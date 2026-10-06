@@ -16,6 +16,7 @@ import { Dashboard } from './dashboard';
         component: Dashboard,
         canActivate: [AuthGuard],
         children: [
+          { path: 'learning', loadChildren: () => import('../learning/learning.module').then(m => m.LearningModule) },
           { path: RouteSegment.assignments, loadChildren: () => import('../assignment/assignment.module').then(m => m.AssignmentModule) },
           { path: RouteSegment.resources, loadChildren: () => import('../resource/resource.module').then(m => m.ResourceModule) },
           { path: RouteSegment.bookings, loadChildren: () => import('../booking/booking.module').then(m => m.BookingModule) },

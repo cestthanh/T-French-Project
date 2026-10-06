@@ -94,7 +94,7 @@ public class ResourcesController(AppDbContext db, FileStorageService storage,
         };
         db.Resources.Add(resource);
         await db.SaveChangesAsync();
-        return Ok(resource);
+        return Ok(DescribeResource(resource));
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ public class ResourcesController(AppDbContext db, FileStorageService storage,
         }
 
         await db.SaveChangesAsync();
-        return Ok(r);
+        return Ok(DescribeResource(r));
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
@@ -181,10 +181,21 @@ public class ResourcesController(AppDbContext db, FileStorageService storage,
     private async Task DeleteFileAsync(StoredFile? file)
     {
         if (file == null) return;
-        storage.Delete(file);
+        // Persist replacement/removal first, then check all remaining associations.
+        await db.SaveChangesAsync();
+        if (await db.Resources.AnyAsync(r => r.FileId == file.Id) ||
+            await db.Assignments.AnyAsync(a => a.AttachmentId == file.Id) ||
+            await db.Submissions.AnyAsync(s => s.FileId == file.Id)) return;
         db.StoredFiles.Remove(file);
         await db.SaveChangesAsync();
+        storage.Delete(file);
     }
+
+    private static object DescribeResource(Resource r) => new
+    {
+        r.Id, r.Title, r.Description, r.FileUrl, r.FileId, r.FileType,
+        r.Category, r.IsPublic, r.CourseId, r.ClassId, r.UploadedById, r.CreatedAt,
+    };
 
     private static bool IsHttpUrl(string value) =>
         Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) &&

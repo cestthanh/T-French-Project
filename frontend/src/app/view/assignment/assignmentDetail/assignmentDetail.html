@@ -23,6 +23,8 @@
         <lucide-icon name="clock" class="h-5 w-5"></lucide-icon>
         Hạn: {{ assignment.dueDate | date: 'dd/MM/yyyy HH:mm' }}
       </span>
+      @if (assignment.openAt) { <span>Mở: {{ assignment.openAt | date:'dd/MM/yyyy HH:mm' }}</span> }
+      @if (assignment.effectiveCutoffAt) { <span>Khóa nhận bài: {{ assignment.effectiveCutoffAt | date:'dd/MM/yyyy HH:mm' }}</span> }
       @if (isOverdue(assignment.dueDate)) {
         <span tfBadge tone="danger">Quá hạn</span>
       }
@@ -53,6 +55,11 @@
           <tf-field label="Tiêu đề" [required]="true" for="draft-title"><input id="draft-title" tfInput formControlName="title" /></tf-field>
           <tf-field label="Yêu cầu bài tập" for="draft-description"><textarea id="draft-description" tfInput rows="4" formControlName="description"></textarea></tf-field>
           <tf-field label="Hạn nộp" [required]="true" for="draft-due"><input id="draft-due" tfInput type="datetime-local" step="1" formControlName="dueDate" /></tf-field>
+          <tf-field label="Giờ mở nhận bài" for="draft-open"><input id="draft-open" tfInput type="datetime-local" formControlName="openAt" /></tf-field>
+          <label class="flex gap-3"><input type="checkbox" formControlName="allowLate" />Cho phép nộp trễ, không tự trừ điểm</label>
+          @if (editForm.value.allowLate) {
+            <tf-field label="Giờ khóa nhận bài trễ" [required]="true" for="draft-cutoff"><input id="draft-cutoff" tfInput type="datetime-local" formControlName="cutoffAt" /></tf-field>
+          }
           <tf-file-upload label="Thay đề bài đính kèm (tuỳ chọn)" hint="File hiện tại được giữ nếu không tải file mới."
             (fileChange)="draftAttachment = $event"></tf-file-upload>
           <div class="flex flex-wrap gap-3">
@@ -66,14 +73,37 @@
   @if (canGrade && assignment.status === 'Published') {
     <button type="button" tfButton variant="secondary" class="mb-8" [disabled]="changingStatus" (click)="close()">Đóng nhận bài</button>
   }
+  @if (!canGrade && history.length > 1) {
+    <section tfCard tone="white" padding="lg" class="mb-6">
+      <h2 class="text-xl font-bold">Lịch sử lượt nộp</h2>
+      @for (item of history; track item.id) {
+        <div class="mt-4 border-t border-line pt-4">
+          <p>Lượt {{ item.attemptNumber }} · {{ item.submittedAt | date:'dd/MM/yyyy HH:mm' }} · {{ item.isLate ? 'Nộp trễ' : 'Đúng hạn' }}</p>
+          <p>{{ item.grade != null ? item.grade + '/10' : 'Chờ công bố kết quả' }}</p>
+          @if (item.feedback) { <p>{{ item.feedback }}</p> }
+          @if (item.note) { <p>{{ item.note }}</p> }
+          @if (item.file || item.fileUrl) { <tf-file-chip [file]="item.file" [url]="item.fileUrl" urlLabel="Mở bài nộp cũ"></tf-file-chip> }
+        </div>
+      }
+    </section>
+  }
+  @if (canGrade && grantStudentId) {
+    <section tfCard tone="white" padding="lg" class="mb-6 space-y-4">
+      <h2 class="text-xl font-bold">Cấp lượt nộp lại</h2>
+      <tf-field label="Lý do" [required]="true"><textarea tfInput [(ngModel)]="grantReason" maxlength="1000"></textarea></tf-field>
+      <tf-field label="Hạn nộp lại" [required]="true"><input tfInput type="datetime-local" [(ngModel)]="grantCutoff" /></tf-field>
+      <button type="button" tfButton variant="primary" (click)="grant()">Xác nhận cấp lượt</button>
+      <button type="button" tfButton variant="secondary" (click)="grantStudentId = null">Hủy</button>
+    </section>
+  }
   <!-- ══ STUDENT: submit ═════════════════════════════════════════════════ -->
   @if (!canGrade) {
-    @if (!mySubmission && assignment.status === 'Closed') {
-      <p role="status" class="mb-6 rounded-md bg-muted p-4">Bài tập đã đóng nhận bài.</p>
+    @if (!canHandIn && !mySubmission) {
+      <p role="status" class="mb-6 rounded-md bg-muted p-4">{{ timingMessage }}</p>
     }
-    @if (!mySubmission && assignment.status === 'Published') {
+    @if (canHandIn) {
       <div tfCard tone="white" padding="lg">
-        <h2 class="text-xl font-extrabold tracking-heading">Nộp bài</h2>
+        <h2 class="text-xl font-extrabold tracking-heading">Nộp bài — lượt {{ assignment.allowedAttemptNumber }}</h2>
         <form [formGroup]="submitForm" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
           <div class="flex gap-2">
             <button
@@ -128,12 +158,12 @@
               <lucide-icon name="check" class="h-7 w-7 text-white" [strokeWidth]="3"></lucide-icon>
             </span>
             <div>
-              <h2 class="text-xl font-extrabold tracking-heading">Đã nộp bài</h2>
+<h2 class="text-xl font-extrabold tracking-heading">Đã nộp bài — lượt {{ mySubmission.attemptNumber }}{{ mySubmission.isLate ? " · Nộp trễ" : "" }}</h2>
               <p class="mt-1 text-ink-muted">{{ mySubmission.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
             </div>
           </div>
           <span tfBadge [tone]="mySubmission.grade != null ? 'success' : 'muted'" [square]="true">
-            {{ mySubmission.grade != null ? mySubmission.grade + '/10' : 'Chờ chấm' }}
+            {{ mySubmission.grade != null ? mySubmission.grade + '/10 (' + (mySubmission.grade * 10) + '%)' : 'Chờ công bố kết quả' }}
           </span>
         </div>
         @if (mySubmission.file || mySubmission.fileUrl) {
@@ -180,7 +210,7 @@
               </span>
               <div>
                 <p class="font-bold tracking-heading">{{ s.student?.fullName }}</p>
-                <p class="text-sm text-ink-muted">{{ s.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+                <p class="text-sm text-ink-muted">Lượt {{ s.attemptNumber }}{{ s.isLate ? " · Nộp trễ" : "" }} · {{ s.submittedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
               </div>
             </div>
             <span tfBadge [tone]="s.grade != null ? 'success' : 'muted'" [square]="true">
@@ -198,6 +228,11 @@
               <p class="break-all text-ink-soft">{{ s.note }}</p>
             </div>
           }
+          <p class="mt-3 text-sm text-ink-muted">{{ s.releasedAt ? 'Kết quả đã công bố' : 'Kết quả chưa công bố' }}</p>
+          @if (s.grade != null && !s.releasedAt) {
+            <button type="button" tfButton variant="primary" class="mt-4" (click)="release(s)">Công bố kết quả</button>
+          }
+          <button type="button" tfButton variant="secondary" class="mt-4 ml-3" (click)="grantStudentId = s.studentId">Cấp lượt nộp lại</button>
           <!-- Inline grading -->
           @if (gradingId === s.id) {
             <div class="mt-6 flex flex-wrap items-end gap-4 border-t-2 border-muted pt-6">

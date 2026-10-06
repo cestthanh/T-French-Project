@@ -22,6 +22,9 @@ export class QuizService {
   }
   submit(id: number): Observable<{ status: string; score?: number }> { return this.http.post<{ status: string; score?: number }>(`${this.base}/attempts/${id}/submit`, {}); }
   getResults(id: number): Observable<QuizResult[]> { return this.http.get<QuizResult[]>(`${this.base}/${id}/results`); }
+  releaseResults(id: number): Observable<{ releasedCount: number }> {
+    return this.http.post<{ releasedCount: number }>(`${this.base}/${id}/results/release`, {});
+  }
   gradeAnswer(answerId: number, score: number, feedback?: string): Observable<unknown> {
     return this.http.patch(`${this.base}/answers/${answerId}/grade`, { score, feedback });
   }

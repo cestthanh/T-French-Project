@@ -7,6 +7,8 @@ export interface Assignment {
   title: string;
   description?: string;
   dueDate: string;
+  openAt?: string;
+  cutoffAt?: string;
   status: AssignmentStatus;
   course: string;
   courseId: number;
@@ -23,6 +25,8 @@ export interface Assignment {
 export interface Submission {
   id: number;
   attemptNumber: number;
+  isLate?: boolean;
+  releasedAt?: string;
   submittedAt: string;
   grade?: number;
   feedback?: string;
@@ -33,12 +37,17 @@ export interface Submission {
   assignment: string;
   course: string;
   dueDate: string;
+  openAt?: string;
+  cutoffAt?: string;
 }
 
 export interface CreateAssignmentRequest {
+  allowLate?: boolean;
   title: string;
   description?: string;
   dueDate: string;
+  openAt?: string;
+  cutoffAt?: string;
   courseId: number;
   classId?: number;
   attachmentUrl?: string;
@@ -47,6 +56,7 @@ export interface CreateAssignmentRequest {
 
 /** Body of `POST /api/assignments/{id}/submit`. */
 export interface SubmitAssignmentRequest {
+  attemptNumber?: number;
   fileId?: number;
   fileUrl?: string;
   note?: string;

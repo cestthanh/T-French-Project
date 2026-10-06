@@ -175,6 +175,7 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.AddScoped<FileStorageService>();
 builder.Services.AddScoped<LearningAccessService>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Kestrel's default multipart cap is 128 MB; bring it down near our own limit
 // so an oversized upload is rejected before it is buffered to disk.
@@ -193,8 +194,11 @@ builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
         opts.JsonSerializerOptions.Converters.Add(
-            new System.Text.Json.Serialization.JsonStringEnumConverter()));
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // ─── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
@@ -216,6 +220,10 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
     app.UseHttpsRedirection();
+}
+var serveFrontend = !app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Frontend:ServeInDevelopment");
+if (serveFrontend)
+{
     app.UseDefaultFiles();
     app.UseStaticFiles();
 }
@@ -252,7 +260,7 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken cancellationToke
 });
 app.MapControllers();
 
-if (!app.Environment.IsDevelopment())
+if (serveFrontend)
 {
     // Let Angular handle client-side routes while preserving a real 404 for
     // unknown API paths instead of returning index.html as if it were JSON.

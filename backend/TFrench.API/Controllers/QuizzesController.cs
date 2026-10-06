@@ -162,7 +162,7 @@ public class QuizzesController(
                 QuestionCount = q.Questions.Count,
                 TotalPoints = q.Questions.Sum(x => (double)x.Points),
                 Attempt = q.Attempts.Where(a => a.StudentId == CurrentUserId)
-                    .Select(a => new { a.Id, a.Status, a.Score, a.Deadline }).FirstOrDefault(),
+                    .Select(a => new { a.Id, a.Status, Score = a.ReleasedAt != null ? a.Score : null, a.ReleasedAt, a.Deadline }).FirstOrDefault(),
             }).ToListAsync();
         return Ok(rows);
     }
@@ -220,11 +220,12 @@ public class QuizzesController(
             await attemptService.FinalizeAsync(attempt, attempt.Deadline);
 
         var quiz = attempt.Quiz!;
-        var canReview = attempt.Status == QuizAttemptStatus.Graded && quiz.ShowAnswersAfterGrading;
+        var released = attempt.ReleasedAt != null;
+        var canReview = released && attempt.Status == QuizAttemptStatus.Graded && quiz.ShowAnswersAfterGrading && DateTime.UtcNow >= quiz.CloseAt;
         return Ok(new
         {
             attempt.Id, attempt.Status, attempt.StartedAt, attempt.Deadline, attempt.SubmittedAt,
-            attempt.Score, attempt.Version,
+            Score = released ? attempt.Score : null, attempt.ReleasedAt, attempt.Version,
             Quiz = new
             {
                 quiz.Id, quiz.Title, quiz.Description,
@@ -243,8 +244,8 @@ public class QuizzesController(
                 {
                     a.Id, a.TextAnswer,
                     SelectedOptionIds = ParseIds(a.SelectedOptionIdsJson),
-                    Score = a.ManualScore ?? a.AutoScore,
-                    a.Feedback,
+                    Score = released ? a.ManualScore ?? a.AutoScore : null,
+                    Feedback = released ? a.Feedback : null,
                 }).FirstOrDefault()
             })
         });
@@ -273,7 +274,7 @@ public class QuizzesController(
 
         await using var transaction = await db.Database.BeginTransactionAsync();
         var updated = await db.QuizAttempts.Where(a => a.Id == id && a.Version == dto.Version &&
-                a.Status == QuizAttemptStatus.InProgress)
+                a.Status == QuizAttemptStatus.InProgress && a.Deadline > DateTime.UtcNow)
             .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Version, a => a.Version + 1));
         if (updated == 0)
         {
@@ -309,7 +310,7 @@ public class QuizzesController(
         if (attempt == null) return NotFound();
         if (attempt.Status == QuizAttemptStatus.InProgress)
             await attemptService.FinalizeAsync(attempt);
-        return Ok(new { attempt.Id, attempt.Status, attempt.Score, attempt.SubmittedAt });
+        return Ok(new { attempt.Id, attempt.Status, Score = attempt.ReleasedAt != null ? attempt.Score : null, attempt.SubmittedAt });
     }
 
     [HttpGet("{id}/results")]
@@ -324,7 +325,7 @@ public class QuizzesController(
             .OrderByDescending(a => a.StartedAt).Select(a => new
             {
                 a.Id, a.StudentId, Student = a.Student!.FullName, a.Student.Email,
-                a.Status, a.Score, a.StartedAt, a.SubmittedAt,
+                a.Status, a.Score, a.ReleasedAt, a.StartedAt, a.SubmittedAt,
                 EssayAnswers = a.Answers.Where(x => x.Question!.Type == QuizQuestionType.Essay)
                     .OrderBy(x => x.Question!.Order).Select(x => new
                     {
@@ -339,12 +340,16 @@ public class QuizzesController(
     [Authorize(Roles = "Admin,Teacher")]
     public async Task<IActionResult> GradeEssay(int answerId, [FromBody] GradeQuizAnswerDto dto)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync();
         var answer = await db.AttemptAnswers
             .Include(a => a.Question)
             .Include(a => a.Attempt).ThenInclude(a => a!.Quiz).ThenInclude(q => q!.Class)
             .FirstOrDefaultAsync(a => a.Id == answerId);
         if (answer == null) return NotFound();
         if (!CanManage(answer.Attempt!.Quiz!)) return Forbid();
+        if (answer.Attempt.Status == QuizAttemptStatus.InProgress)
+            return Conflict(new { message = "Chỉ chấm được lượt đã nộp." });
+        answer.Attempt.ReleasedAt = null;
         if (answer.Question!.Type != QuizQuestionType.Essay)
             return BadRequest(new { message = "Chỉ câu tự luận mới được chấm thủ công." });
         if (dto.Score < 0 || dto.Score > answer.Question.Points)
@@ -359,7 +364,26 @@ public class QuizzesController(
         await db.SaveChangesAsync();
 
         await attemptService.RecalculateAfterManualGradingAsync(answer.AttemptId);
+        await transaction.CommitAsync();
         return Ok(new { answer.Id, answer.ManualScore, answer.Feedback });
+    }
+
+    [HttpPost("{id}/results/release")]
+    [Authorize(Roles = "Admin,Teacher")]
+    public async Task<IActionResult> ReleaseResults(int id)
+    {
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var quiz = await db.Quizzes.Include(q => q.Class).FirstOrDefaultAsync(q => q.Id == id);
+        if (quiz == null) return NotFound();
+        if (!CanManage(quiz)) return Forbid();
+        if (DateTime.UtcNow < quiz.CloseAt)
+            return Conflict(new { message = "Chỉ công bố kết quả sau giờ đóng đề." });
+        var attempts = await db.QuizAttempts.Where(a => a.QuizId == id && a.Status == QuizAttemptStatus.Graded && a.ReleasedAt == null).ToListAsync();
+        foreach (var attempt in attempts) attempt.ReleasedAt = DateTime.UtcNow;
+        if (attempts.Count > 0) audit.Record("QuizResultsReleased", "Quiz", id, new { Count = attempts.Count });
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return Ok(new { releasedCount = attempts.Count });
     }
 
     private bool CanManage(Quiz quiz) =>

@@ -9,7 +9,12 @@ public class QuizAttemptService(AppDbContext db)
 {
     public async Task FinalizeAsync(QuizAttempt attempt, DateTime? submittedAt = null)
     {
-        if (attempt.Status != QuizAttemptStatus.InProgress) return;
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var caller = attempt;
+        db.ChangeTracker.Clear();
+        attempt = await db.QuizAttempts.Include(a => a.Quiz).ThenInclude(q => q!.Questions).ThenInclude(q => q.Options)
+            .Include(a => a.Answers).FirstAsync(a => a.Id == caller.Id);
+        if (attempt.Status != QuizAttemptStatus.InProgress) { CopyState(attempt, caller); return; }
 
         var total = 0m;
         var pendingEssay = false;
@@ -36,7 +41,10 @@ public class QuizAttemptService(AppDbContext db)
         attempt.SubmittedAt ??= submittedAt ?? DateTime.UtcNow;
         attempt.Status = pendingEssay ? QuizAttemptStatus.PendingGrading : QuizAttemptStatus.Graded;
         attempt.Score = pendingEssay ? null : total;
+        attempt.Version++;
         await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        CopyState(attempt, caller);
     }
 
     public async Task RecalculateAfterManualGradingAsync(int attemptId)
@@ -52,6 +60,13 @@ public class QuizAttemptService(AppDbContext db)
         attempt.Score = attempt.Answers.Sum(a => a.AutoScore ?? a.ManualScore ?? 0m);
         attempt.Status = QuizAttemptStatus.Graded;
         await db.SaveChangesAsync();
+    }
+
+    private static void CopyState(QuizAttempt source, QuizAttempt target)
+    {
+        target.Status = source.Status; target.Score = source.Score; target.Version = source.Version;
+        target.SubmittedAt = source.SubmittedAt; target.ReleasedAt = source.ReleasedAt;
+        target.Answers = source.Answers; target.Quiz = source.Quiz;
     }
 
     private static int[] ParseIds(string value)

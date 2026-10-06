@@ -23,6 +23,9 @@ public class Assignment
     public StoredFile? Attachment { get; set; }
 
     public DateTime DueDate { get; set; }
+    public DateTime? OpenAt { get; set; }
+    // Null is retained only for historical assignments that had no hard cutoff.
+    public DateTime? CutoffAt { get; set; }
     public AssignmentStatus Status { get; set; } = AssignmentStatus.Draft;
 
     public int CourseId { get; set; }
@@ -50,6 +53,8 @@ public class Submission
     public int StudentId { get; set; }
     public User? Student { get; set; }
     public int AttemptNumber { get; set; } = 1;
+    public bool IsLate { get; set; }
+    public DateTime? ReleasedAt { get; set; }
 
     /// <summary>External link the student pasted instead of uploading.</summary>
     public string? FileUrl { get; set; }
@@ -66,4 +71,19 @@ public class Submission
 
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;
     public DateTime? GradedAt { get; set; }
+}
+
+public class AssignmentResubmissionGrant
+{
+    public int Id { get; set; }
+    public int AssignmentId { get; set; }
+    public Assignment Assignment { get; set; } = null!;
+    public int StudentId { get; set; }
+    public User Student { get; set; } = null!;
+    public int AttemptNumber { get; set; }
+    public DateTime CutoffAt { get; set; }
+    [Required, MaxLength(1000)] public string Reason { get; set; } = "";
+    public int GrantedById { get; set; }
+    public User GrantedBy { get; set; } = null!;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

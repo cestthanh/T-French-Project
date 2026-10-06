@@ -41,7 +41,7 @@ export class AssignmentList implements OnInit {
       title: ['', Validators.required],
       description: [''],
       classId: [null, Validators.required],
-      dueDate: ['', Validators.required],
+      dueDate: ['', Validators.required], openAt: [''], allowLate: [false], cutoffAt: [''],
     });
   }
 
@@ -86,6 +86,8 @@ export class AssignmentList implements OnInit {
       ...this.createForm.value,
       courseId: selectedClass.courseId,
       dueDate: due.toISOString(),
+      openAt: this.createForm.value.openAt ? new Date(this.createForm.value.openAt).toISOString() : undefined,
+      cutoffAt: this.createForm.value.allowLate && this.createForm.value.cutoffAt ? new Date(this.createForm.value.cutoffAt).toISOString() : undefined,
       attachmentId: this.attachment?.id,
     };
     this.assignmentService.create(dto).subscribe({

@@ -38,6 +38,14 @@ export class AssignmentService {
     return this.http.post<{ status: AssignmentStatus }>(uriAssignment.CLOSE(id), {});
   }
 
+  release(id: number, submissionId: number): Observable<unknown> {
+    return this.http.post(`${uriAssignment.DETAIL(id)}/submissions/${submissionId}/release`, {});
+  }
+
+  grant(id: number, studentId: number, reason: string, cutoffAt: string): Observable<unknown> {
+    return this.http.post(`${uriAssignment.DETAIL(id)}/resubmissions`, { studentId, reason, cutoffAt });
+  }
+
   /**
    * Hands in work. The file itself is uploaded separately by `FileService`, so
    * this body only carries the id it came back with — which keeps the endpoint

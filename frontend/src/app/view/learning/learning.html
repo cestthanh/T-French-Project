@@ -1,0 +1,49 @@
+<tf-page-header title="Lớp học của tôi" subtitle="Việc cần làm, tài liệu và bảng điểm theo lớp"></tf-page-header>
+<tf-field label="Lớp học" for="learning-class">
+  <select id="learning-class" tfInput [(ngModel)]="classId" (ngModelChange)="load()">
+    @for (item of classes; track item.id) { <option [ngValue]="item.id">{{ item.course }} — {{ item.name }}</option> }
+  </select>
+</tf-field>
+@if (loading) { <tf-spinner label="Đang tải lớp học..."></tf-spinner> }
+@if (!loading && !classes.length) { <tf-empty-state icon="school" title="Chưa có lớp học" description="Lớp đã ghi danh và đang hoạt động sẽ xuất hiện tại đây."></tf-empty-state> }
+@if (overview) {
+  <section class="mt-8">
+    <h2 class="text-2xl font-bold">Việc cần làm</h2>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+      @for (item of overview.activities; track item.kind + item.id) {
+        <article tfCard tone="white" padding="md">
+          <p class="text-sm text-ink-muted">{{ item.kind === 'Quiz' ? 'Bài kiểm tra' : 'Bài tập' }} · {{ labels[item.state] || item.state }}</p>
+          <h3 class="mt-2 font-bold">{{ item.title }}</h3><p class="mt-2">{{ item.at | date:'dd/MM/yyyy HH:mm' }}</p>
+          @if (item.pendingGrading) { <p>{{ item.pendingGrading }} bài cần chấm</p> }
+          <a tfButton variant="outline" class="mt-4" [routerLink]="item.path">Mở bài</a>
+        </article>
+      }
+    </div>
+    @if (!overview.activities.length) { <p class="mt-4 text-ink-muted">Chưa có bài tập hoặc bài kiểm tra.</p> }
+  </section>
+  <section class="mt-8">
+    <h2 class="text-2xl font-bold">Tài liệu</h2>
+    @for (item of overview.resources; track item.id) { <p class="mt-3"><a routerLink="/dashboard/resources">{{ item.title }}</a></p> }
+    @if (!overview.resources.length) { <p class="mt-3 text-ink-muted">Chưa có tài liệu.</p> }
+  </section>
+}
+@if (gradebook) {
+  <section class="mt-8" aria-label="Bảng điểm theo lớp">
+    <h2 class="text-2xl font-bold">Bảng điểm</h2>
+    <p class="mt-2 text-sm text-ink-muted">{{ auth.isTeacher || auth.isAdmin ? 'Điểm nháp chỉ giáo viên và quản trị viên xem được. Công bố kết quả tại từng bài.' : 'Chỉ hiển thị kết quả của bạn đã được giáo viên công bố.' }}</p>
+    <div class="mt-4 overflow-x-auto rounded-lg bg-white">
+      <table class="w-full text-left">
+        <thead><tr><th class="p-4">Học viên</th>@for (column of gradebook.columns; track column.key) { <th class="p-4">{{ column.title }}<p class="text-sm font-normal">Thang {{ column.max }}</p></th> }</tr></thead>
+        <tbody>@for (row of gradebook.rows; track row.studentId) {
+          <tr class="border-t border-line"><th class="p-4">{{ row.name }}</th>
+          @for (column of gradebook.columns; track column.key) {
+            <td class="p-4">@if (row.cells[column.key].earned != null) {
+              <p>{{ row.cells[column.key].earned }}/{{ column.max }} · {{ row.cells[column.key].percent }}%</p>
+              <p class="text-sm text-ink-muted">{{ row.cells[column.key].state === 'Released' ? 'Đã công bố' : 'Điểm nháp' }}</p>
+            } @else { {{ row.cells[column.key].state === 'NotSubmitted' ? 'Chưa nộp' : 'Chờ kết quả' }} }</td>
+          }</tr>
+        }</tbody>
+      </table>
+    </div>
+  </section>
+}

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TFrench.API.Data;
 using TFrench.API.Models;
+using TFrench.API.Services;
 
 namespace TFrench.API.Controllers;
 
@@ -14,7 +15,7 @@ namespace TFrench.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class DashboardController(AppDbContext db) : ControllerBase
+public class DashboardController(AppDbContext db, LearningAccessService access) : ControllerBase
 {
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
@@ -34,20 +35,20 @@ public class DashboardController(AppDbContext db) : ControllerBase
                 .Where(s => s.StudentId == CurrentUserId)
                 .Select(s => s.AssignmentId).ToListAsync();
 
-            var pendingAssignments = await db.Assignments
-                .Where(a => enrolledIds.Contains(a.CourseId)
+            var pendingAssignments = await access.VisibleAssignments(CurrentUserId, CurrentRole)
+                .Where(a => a.Status == AssignmentStatus.Published
                          && !submittedIds.Contains(a.Id)
                          && a.DueDate > DateTime.UtcNow)
                 .CountAsync();
 
-            var overdueAssignments = await db.Assignments
-                .Where(a => enrolledIds.Contains(a.CourseId)
+            var overdueAssignments = await access.VisibleAssignments(CurrentUserId, CurrentRole)
+                .Where(a => a.Status == AssignmentStatus.Published
                          && !submittedIds.Contains(a.Id)
                          && a.DueDate <= DateTime.UtcNow)
                 .CountAsync();
 
             var gradedCount = await db.Submissions
-                .Where(s => s.StudentId == CurrentUserId && s.Grade != null)
+                .Where(s => s.StudentId == CurrentUserId && s.ReleasedAt != null)
                 .CountAsync();
 
             var upcomingBookings = await db.BookingSlots
@@ -56,8 +57,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
                          && s.StartTime > DateTime.UtcNow)
                 .CountAsync();
 
-            var resources = await db.Resources
-                .Where(r => r.IsPublic || (r.CourseId != null && enrolledIds.Contains(r.CourseId.Value)))
+            var resources = await access.VisibleResources(CurrentUserId, CurrentRole)
                 .CountAsync();
 
             return Ok(new {
@@ -82,8 +82,7 @@ public class DashboardController(AppDbContext db) : ControllerBase
                 .Select(e => e.StudentId).Distinct().CountAsync();
 
             var pendingGrading = await db.Submissions
-                .Where(s => myCourseIds.Contains(
-                    db.Assignments.Where(a => a.Id == s.AssignmentId).Select(a => a.CourseId).First())
+                .Where(s => access.VisibleAssignments(CurrentUserId, CurrentRole).Any(a => a.Id == s.AssignmentId)
                     && s.Grade == null)
                 .CountAsync();
 

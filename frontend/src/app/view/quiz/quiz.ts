@@ -37,6 +37,8 @@ export class QuizPage implements OnInit, OnDestroy {
   resolvingConflict = false;
   submitting = false;
   creating = false;
+  previewing = false;
+  previewAnswers: Record<number, string> = {};
   loadingEditor = false;
   editingQuizId: number | null = null;
 
@@ -429,6 +431,14 @@ export class QuizPage implements OnInit, OnDestroy {
     return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
   }
 
+  releaseResults(item: ManagedQuiz): void {
+    if (!confirm('Công bố điểm, nhận xét và đáp án theo cài đặt đề cho các lượt đã chấm?')) return;
+    this.quizService.releaseResults(item.id).subscribe({
+      next: () => { this.toast.success('Đã công bố kết quả.'); if (this.resultQuiz?.id === item.id) this.viewResults(item); },
+      error: err => this.toast.error(err?.error?.message ?? 'Không công bố được kết quả.'),
+    });
+  }
+
   togglePublish(item: ManagedQuiz): void {
     if (this.creating || this.loadingEditor) return;
     if (this.editingQuizId === item.id && this.draftDirty) {
@@ -499,6 +509,7 @@ export class QuizPage implements OnInit, OnDestroy {
   }
 
   private resetDraft(): void {
+    this.previewing = false;
     this.editingQuizId = null;
     this.quizDraft = { title: '', description: '', classId: null, openAt: '', closeAt: '', durationMinutes: 45, showAnswersAfterGrading: true, questions: [] };
     this.draftBaseline = JSON.stringify(this.quizDraft);

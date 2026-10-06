@@ -25,6 +25,7 @@ export class Dashboard implements OnInit {
 
   readonly nav: NavItem[] = [
     { path: '/dashboard', label: 'Tổng quan', icon: 'layout-dashboard', exact: true },
+    { path: '/dashboard/learning', label: 'Lớp học & bảng điểm', icon: 'school' },
     { path: '/dashboard/assignments', label: 'Bài tập', icon: 'clipboard-list' },
     { path: '/dashboard/quizzes', label: 'Bài kiểm tra', icon: 'clipboard-check' },
     { path: '/dashboard/resources', label: 'Tài liệu', icon: 'folder-open' },

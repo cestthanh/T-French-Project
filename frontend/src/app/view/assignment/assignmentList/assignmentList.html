@@ -35,6 +35,11 @@
           <input id="a-due" tfInput type="datetime-local" formControlName="dueDate" />
         </tf-field>
       </div>
+      <tf-field label="Giờ mở nhận bài (để trống để mở ngay)" for="a-open"><input id="a-open" tfInput type="datetime-local" formControlName="openAt" /></tf-field>
+      <label class="flex gap-3"><input type="checkbox" formControlName="allowLate" />Cho phép nộp trễ, không tự trừ điểm</label>
+      @if (createForm.value.allowLate) {
+        <tf-field label="Giờ khóa nhận bài trễ" [required]="true" for="a-cutoff"><input id="a-cutoff" tfInput type="datetime-local" formControlName="cutoffAt" /></tf-field>
+      }
       <tf-file-upload
         label="Đề bài đính kèm (tuỳ chọn)"
         hint="Chỉ học viên đang học lớp được chọn tải được."

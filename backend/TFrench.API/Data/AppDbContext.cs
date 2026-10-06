@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<AssignmentResubmissionGrant> AssignmentResubmissionGrants => Set<AssignmentResubmissionGrant>();
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<BookingSlot> BookingSlots => Set<BookingSlot>();
     public DbSet<BlogPost> BlogPosts => Set<BlogPost>();
@@ -28,6 +29,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         base.OnModelCreating(modelBuilder);
 
         // Unique email
+        modelBuilder.Entity<AssignmentResubmissionGrant>()
+            .HasIndex(g => new { g.AssignmentId, g.StudentId, g.AttemptNumber }).IsUnique();
+        modelBuilder.Entity<AssignmentResubmissionGrant>()
+            .HasOne(g => g.Student).WithMany().HasForeignKey(g => g.StudentId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<AssignmentResubmissionGrant>()
+            .HasOne(g => g.GrantedBy).WithMany().HasForeignKey(g => g.GrantedById).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email).IsUnique();
 
