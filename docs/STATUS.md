@@ -1,13 +1,15 @@
 # Trạng thái T-French
 
-**Cập nhật:** 07/10/2026. Đây là ảnh chụp trạng thái repository, không phải xác nhận hệ thống đã triển khai trên Railway. Đọc `git status --short --branch` trước khi tiếp tục vì working tree có thể thay đổi giữa các phiên.
+**Cập nhật:** 08/10/2026. Đây là ảnh chụp trạng thái repository, không phải xác nhận hệ thống đã triển khai trên Railway. Đọc `git status --short --branch` trước khi tiếp tục vì working tree có thể thay đổi giữa các phiên.
 
-**Đợt 07/10:** Đã triển khai và kiểm thử cục bộ [phạm vi hoàn thiện được yêu cầu](LEARNING_COMPLETION_EXECUTION.md): deadline/nộp trễ, công bố kết quả, lượt nộp lại, bảng điểm/việc cần làm, preview quiz, E2E/CI và công cụ staging/backup. CI hosted và Railway chưa có run/triển khai được xác nhận; đọc [runbook vận hành](OPERATIONS_RUNBOOK.md) trước khi bật trên dữ liệu thật.
+**Đợt 07/10:** Đã triển khai và kiểm thử cục bộ [phạm vi hoàn thiện được yêu cầu](LEARNING_COMPLETION_EXECUTION.md): deadline/nộp trễ, công bố kết quả, lượt nộp lại, bảng điểm/việc cần làm, preview quiz, E2E/CI và công cụ staging/backup. Railway chưa có triển khai được xác nhận; đọc [runbook vận hành](OPERATIONS_RUNBOOK.md) trước khi bật trên dữ liệu thật.
+
+**Đợt 08/10:** Đã push 10 commit trước đó cùng README mới (`9628b4c`) lên `origin/tuanthanh_dev`; đối chiếu `git ls-remote` khớp HEAD sau push. [README](../README.md) hướng dẫn cài công cụ, clone đúng nhánh, chạy .NET/Node hoặc Docker, đăng nhập demo, thử ba vai trò, kiểm thử và giữ dữ liệu. Đã kiểm tra 25 liên kết nội bộ, 16 khối lệnh PowerShell (0 lỗi cú pháp) và `git diff --check`. Không chạy lại bộ test ứng dụng cục bộ: máy hiện có SDK 9 và Docker engine chưa chạy. CI hosted đầu tiên đã chạy: backend/frontend pass; staging/restore kiểm tra thành công nhưng job lỗi khi dọn thư mục upload thuộc UID container trên Linux. Đã bổ sung thu hồi ownership chỉ trong thư mục fixture tạm sau khi dừng container; cần xem [Actions của nhánh](https://github.com/cestthanh/T-French-Project/actions?query=branch%3Atuanthanh_dev) cho kết quả bản sửa.
 
 ## Điểm xuất phát
 
-- Commit chức năng mới: `efb64af`; CI/E2E/staging/backup và bản vá Angular: `49f59b2`. Các commit chưa push; xem Git log/status cho commit tài liệu và trạng thái thực tế.
-- Nhánh được rà soát: `tuanthanh_dev`; nền nghiệp vụ trước đợt này ở `7fc9a1e` (`feat: complete learning workflows and production deployment`, 23/09/2026). Bản nâng backend/test/Docker lên .NET 10 đã được commit riêng tại `000d4eb` ngày 02/10/2026. Các commit mới chưa được đẩy lên remote trong phiên này.
+- Commit chức năng mới: `efb64af`; CI/E2E/staging/backup và bản vá Angular: `49f59b2`; README cho người mới: `9628b4c`. Đã push lên nhánh hiện tại; xem Git log/status cho commit tài liệu và trạng thái thực tế.
+- Nhánh được rà soát và push: `tuanthanh_dev`; nền nghiệp vụ trước đợt này ở `7fc9a1e` (`feat: complete learning workflows and production deployment`, 23/09/2026). Bản nâng backend/test/Docker lên .NET 10 đã được commit riêng tại `000d4eb` ngày 02/10/2026.
 - Bộ tài liệu bàn giao gồm `README.md`, `AGENTS.md`, các trang trong `docs/`, `frontend/README.md` và chỉnh sửa lịch sử trong `DE_XUAT_PHAT_TRIEN_DU_AN.md`. Luôn xem `git status --short --branch` trước khi tiếp tục; không suy từ tài liệu rằng working tree đang sạch.
 - Frontend dùng Angular 21; backend nhắm `net10.0`, EF Core/ASP.NET Core 10.0.12; SQLite lưu dữ liệu, file upload nằm ngoài `wwwroot`. Dockerfile build cả frontend và backend thành một container.
 
@@ -39,11 +41,11 @@ Ngày **07/10/2026**, trên working tree của đợt này:
 
 Migration `20261006214939_LearningDeadlinesAndResults` đã chạy trên bản sao snapshot lịch sử: giữ nguyên cột dữ liệu gốc của **12 Resource, 1 Assignment, 8 Submission, 29 StoredFile**; quick_check OK, 0 lỗi FK; điểm đã chấm cũ đều có ReleasedAt. Assignment cũ giữ phạm vi khóa và cutoff null. Đây là rehearsal database lịch sử; chưa kiểm kê dữ liệu hiện hành của production.
 
-Đã có workflow `.github/workflows/validation.yml` và staging `compose.staging.yaml`. Các lệnh tương ứng đã chạy cục bộ; chưa có GitHub Actions run để xác nhận hosted CI. Smoke suites Bash khác ở `backend/tests/` chưa chạy lại trong đợt này. Nhật ký mốc trước nằm trong Git và phụ lục D của tài liệu đề xuất.
+Đã có workflow `.github/workflows/validation.yml` và staging `compose.staging.yaml`. Các lệnh tương ứng đã chạy cục bộ ngày 07/10; GitHub Actions bắt đầu có run sau push ngày 08/10, kết quả hosted xem theo SHA trên trang Actions. Smoke suites Bash khác ở `backend/tests/` chưa chạy lại trong đợt này. Nhật ký mốc trước nằm trong Git và phụ lục D của tài liệu đề xuất.
 
 ## Việc tiếp theo
 
-1. Push các commit đã kiểm thử để CI hosted chạy; xem kết quả run trước khi merge/deploy. Bản local chưa được push trong phiên này.
+1. Xem kết quả CI hosted của commit mới nhất trước khi merge/deploy; việc push đã hoàn thành. Nếu có lỗi, đối chiếu log job với các kết quả cục bộ có ngày ở trên.
 2. Trên môi trường đích: lấy snapshot DB **và upload** hiện hành, audit/migration rehearsal, cấu hình secret/volume riêng, chạy staging và kiểm tra backup/restore. Repository chưa xác nhận Railway, lịch backup hay người chịu trách nhiệm vận hành.
 3. Các mở rộng ngoài phạm vi đợt này: rubric cấu trúc, notification, Module/Lesson, ngoại lệ thời gian theo học viên, quét nội dung file/retention và hoàn thiện session/validation chung. Không tự coi chúng đã được duyệt chỉ vì có roadmap.
 

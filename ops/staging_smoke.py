@@ -1,6 +1,7 @@
 """Run a production container, restore its DB/uploads, then verify restored API bytes."""
 import argparse
 import json
+import os
 import secrets
 import subprocess
 import tempfile
@@ -101,6 +102,15 @@ def run(image):
         finally:
             for name in containers:
                 subprocess.run(["docker", "rm", "-f", name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            if os.name == "posix":
+                # Only this TemporaryDirectory contains synthetic smoke data.
+                # Upload directories belong to the application's non-root UID;
+                # return them to the host runner after every writer has stopped
+                # so TemporaryDirectory can remove them on Linux, even on failure.
+                docker("run", "--rm", "--network", "none", "--user", "0:0",
+                       "--mount", f"type=bind,source={root},target=/fixture",
+                       "--entrypoint", "chown", image, "-R",
+                       f"{os.getuid()}:{os.getgid()}", "/fixture")
 
 
 if __name__ == "__main__":
