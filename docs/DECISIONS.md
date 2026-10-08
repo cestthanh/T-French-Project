@@ -21,6 +21,14 @@ Các dòng trên mô tả code hiện tại và những ô đã đánh dấu tro
 - Ngày 03/10: bài tập API tạo mới là nháp; giáo viên xem trước rồi công bố, sau đó có thể đóng nhận bài. Chỉ sửa nháp chưa có bài nộp; bài có bài nộp được giữ để chấm/xem kết quả, không xóa. Migration gán Published cho bài tập cũ; DueDate chưa tự khóa nhận bài cho tới khi triển khai chính sách deadline W3.
 - Bài tập giữ một lượt nộp như API trước đó, nay có ràng buộc database; request thử lại cùng file/link/ghi chú trả kết quả đã lưu. Khác nội dung bị từ chối, không ghi đè bài hay điểm. `AttemptNumber` chuẩn bị schema cho tương lai, không tự bật quyền nộp lại.
 
+## Nhập đề quiz từ Word — 08/10/2026
+
+Chủ dự án yêu cầu có cả soạn tay và nhập file vì giáo viên soạn đề bằng Word; file nghe để trên Google Drive.
+
+- Nhập `.docx` (hoặc dán văn bản từ Word) chạy trên trình duyệt, không thêm API, bảng hay thư viện. Kết quả chỉ đổ vào trình soạn đề; giáo viên kiểm tra rồi lưu qua API tạo/sửa quiz hiện có nên vẫn qua validation server.
+- Định dạng nhận dạng: `Câu N:` (hoặc `N.` khi không có `Câu`), lựa chọn `A.`… đánh dấu đúng bằng `*`, in đậm cả dòng hoặc `Đáp án:`; `(x điểm)`, `[nhiều đáp án]`, `[tự luận]`, `Giải thích:`, `Tiêu chí:`, `Phần N`. Không đoán khi thiếu đáp án đúng: báo lỗi để giáo viên sửa.
+- Phần nghe dùng link Drive dạng văn bản, hiển thị thành link mở tab mới; chưa lưu/nhúng audio trong hệ thống. File `.doc` cũ, ảnh và công thức không được đọc.
+
 ## Còn cần quyết định
 
 | Chủ đề | Câu hỏi cần chốt trước khi mở rộng |

@@ -14,6 +14,9 @@ import { AuthService } from 'src/app/services/authService';
 import { ClassService } from 'src/app/services/classService';
 import { QuizService } from 'src/app/services/quizService';
 import { ToastService } from 'src/app/services/share/toastService';
+import {
+  MAX_IMPORT_BYTES, QuizImportResult, parseQuizBlocks, readDocxBlocks, textToBlocks,
+} from './quiz-import';
 
 interface DraftAnswer { textAnswer?: string; selectedOptionIds: number[]; }
 
@@ -41,6 +44,14 @@ export class QuizPage implements OnInit, OnDestroy {
   previewAnswers: Record<number, string> = {};
   loadingEditor = false;
   editingQuizId: number | null = null;
+
+  importOpen = false;
+  importReading = false;
+  importText = '';
+  importSource = '';
+  importResult: QuizImportResult | null = null;
+  /** Problems left in questions already placed in the editor, numbered as in the editor. */
+  importNotes: string[] = [];
 
   quizDraft = {
     title: '', description: '', classId: null as number | null,
@@ -338,6 +349,69 @@ export class QuizPage implements OnInit, OnDestroy {
     });
   }
 
+  async importWordFile(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!/\.docx$/i.test(file.name)) {
+      this.toast.error('Chỉ đọc được file Word .docx. Với file .doc, hãy mở bằng Word và lưu lại dạng .docx, hoặc dán nội dung vào ô bên dưới.');
+      return;
+    }
+    if (file.size > MAX_IMPORT_BYTES) { this.toast.error('File Word phải nhỏ hơn 10 MB.'); return; }
+    this.importReading = true;
+    try {
+      this.importResult = parseQuizBlocks(await readDocxBlocks(await file.arrayBuffer()));
+      this.importSource = file.name;
+    } catch (error) {
+      this.importResult = null;
+      this.toast.error(error instanceof Error ? error.message : 'Không đọc được file Word.');
+    } finally {
+      this.importReading = false;
+    }
+  }
+
+  readPastedText(): void {
+    if (!this.importText.trim()) { this.toast.error('Hãy dán nội dung đề vào ô trước.'); return; }
+    this.importResult = parseQuizBlocks(textToBlocks(this.importText));
+    this.importSource = 'nội dung đã dán';
+  }
+
+  get importErrors(): number { return this.importResult?.issues.filter(i => i.level === 'error').length ?? 0; }
+
+  importSummary(result: QuizImportResult): string {
+    const count = (type: QuizQuestionType) => result.questions.filter(q => q.type === type).length;
+    const points = result.questions.reduce((sum, q) => sum + q.points, 0);
+    return `${result.questions.length} câu · ${count('SingleChoice')} một đáp án · ${count('MultipleChoice')} nhiều đáp án · ${count('Essay')} tự luận · ${points} điểm`;
+  }
+
+  correctLetters(question: SaveQuizQuestion): string {
+    return question.options.map((o, i) => (o.isCorrect ? String.fromCharCode(65 + i) : '')).filter(Boolean).join(', ') || '—';
+  }
+
+  applyImport(replace: boolean): void {
+    const result = this.importResult;
+    if (!result?.questions.length) return;
+    if (replace && this.quizDraft.questions.length &&
+        !confirm(`Thay ${this.quizDraft.questions.length} câu đang có bằng ${result.questions.length} câu từ ${this.importSource}?`)) return;
+    const offset = replace ? 0 : this.quizDraft.questions.length;
+    this.quizDraft.questions = [...(replace ? [] : this.quizDraft.questions), ...result.questions];
+
+    const preamble = [...result.preamble];
+    if (!this.quizDraft.title.trim() && preamble.length && preamble[0].length <= 200) this.quizDraft.title = preamble.shift()!;
+    if (!this.quizDraft.description.trim() && preamble.length) this.quizDraft.description = preamble.join('\n').slice(0, 4000);
+
+    this.importNotes = result.issues.map(issue =>
+      issue.question ? `Câu ${offset + issue.question}: ${issue.message}` : issue.message);
+    this.toast.success(`Đã đưa ${result.questions.length} câu vào đề. Kiểm tra lại rồi lưu bản nháp.`);
+    this.closeImport();
+  }
+
+  closeImport(): void {
+    this.importOpen = false;
+    this.importResult = null;
+    this.importText = '';
+  }
+
   removeQuestion(index: number): void { this.quizDraft.questions.splice(index, 1); }
   addOption(question: SaveQuizQuestion): void { question.options.push({ text: '', isCorrect: false }); }
   removeOption(question: SaveQuizQuestion, index: number): void { question.options.splice(index, 1); }
@@ -401,6 +475,8 @@ export class QuizPage implements OnInit, OnDestroy {
           this.toast.error('Đề đã được công bố hoặc có lượt làm. Hãy tải lại danh sách.'); return;
         }
         this.editingQuizId = detail.id;
+        this.importNotes = [];
+        this.closeImport();
         this.quizDraft = {
           title: detail.title, description: detail.description ?? '', classId: detail.classId,
           openAt: this.localDateTime(detail.openAt), closeAt: this.localDateTime(detail.closeAt),
@@ -510,6 +586,8 @@ export class QuizPage implements OnInit, OnDestroy {
 
   private resetDraft(): void {
     this.previewing = false;
+    this.importNotes = [];
+    this.closeImport();
     this.editingQuizId = null;
     this.quizDraft = { title: '', description: '', classId: null, openAt: '', closeAt: '', durationMinutes: 45, showAnswersAfterGrading: true, questions: [] };
     this.draftBaseline = JSON.stringify(this.quizDraft);

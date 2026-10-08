@@ -144,7 +144,7 @@ Bài tập mới mặc định khóa nhận bài khi hết hạn; hệ thống k
 
 ### 6.2. Kiểm tra online (quiz)
 
-1. **Teacher:** vào **Quiz** (`/dashboard/quizzes`), chọn lớp, đặt giờ mở/đóng và thời lượng; thêm câu một đáp án, nhiều đáp án hoặc tự luận. Xem trước, lưu nháp rồi công bố.
+1. **Teacher:** vào **Quiz** (`/dashboard/quizzes`), chọn lớp, đặt giờ mở/đóng và thời lượng; thêm câu một đáp án, nhiều đáp án hoặc tự luận. Hoặc bấm **Nhập từ file Word** để chọn file `.docx` hay dán nội dung từ Word; câu hỏi được đưa vào trình soạn để kiểm tra trước. Cách soạn và file mẫu nằm ngay trong khung nhập (`frontend/src/assets/templates/mau-de-kiem-tra.docx`). Với phần nghe, dán link Google Drive vào mô tả hoặc câu hỏi; học viên bấm link để mở. Xem trước, lưu nháp rồi công bố.
 2. **Student:** mở quiz khi trong khung giờ cho phép, bắt đầu làm bài, kiểm tra trạng thái tự lưu rồi nộp. Có thể tải lại trang để tiếp tục lượt đang làm; mỗi học viên có một lượt cho mỗi quiz.
 3. **Teacher:** chấm phần tự luận nếu có. Sau giờ đóng đề, bấm **Công bố kết quả đã chấm**.
 4. **Student:** xem điểm đã công bố trong kết quả/bảng điểm. Quyền xem đáp án đúng phụ thuộc cấu hình của đề.

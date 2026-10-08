@@ -51,13 +51,16 @@
           (click)="closeAttempt()">{{ attempt.status === 'InProgress' && dirty ? 'Lưu và quay lại' : 'Quay lại' }}</button>
       </div>
     </div>
+    @if (attempt.quiz.description) {
+      <p class="mb-5 whitespace-pre-line rounded-lg bg-primary-soft p-5" aria-label="Hướng dẫn bài kiểm tra">@for (part of attempt.quiz.description | linkify; track $index) {@if (part.href) {<a [href]="part.href" target="_blank" rel="noopener noreferrer" class="break-all font-semibold text-primary underline">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</p>
+    }
     <div class="space-y-5">
       @for (question of attempt.questions; track question; let index = $index) {
         <article tfCard tone="white" padding="lg">
           <div class="flex items-start justify-between gap-4">
             <div>
               <p class="eyebrow text-primary">Câu {{ index + 1 }} · {{ questionTypeLabel(question.type) }}</p>
-              <h2 class="mt-2 text-lg font-bold whitespace-pre-line">{{ question.content }}</h2>
+              <h2 class="mt-2 text-lg font-bold whitespace-pre-line">@for (part of question.content | linkify; track $index) {@if (part.href) {<a [href]="part.href" target="_blank" rel="noopener noreferrer" class="break-all font-semibold text-primary underline">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</h2>
             </div>
             <span tfBadge tone="secondary-soft" [square]="true">{{ question.points }} điểm</span>
           </div>
@@ -109,7 +112,7 @@
                 <p class="mt-1"><strong>Nhận xét:</strong> {{ question.answer.feedback }}</p>
               }
               @if (question.explanation) {
-                <p class="mt-2 rounded-md bg-secondary-soft p-3"><strong>Giải thích:</strong> {{ question.explanation }}</p>
+                <p class="mt-2 whitespace-pre-line rounded-md bg-secondary-soft p-3"><strong>Giải thích:</strong> @for (part of question.explanation | linkify; track $index) {@if (part.href) {<a [href]="part.href" target="_blank" rel="noopener noreferrer" class="break-all font-semibold text-primary underline">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</p>
               }
             </div>
           }
@@ -136,7 +139,7 @@
           <h2 class="mt-4 text-xl font-extrabold">{{ quiz.title }}</h2>
           <p class="mt-2 text-sm text-ink-muted">{{ quiz.className }}</p>
           @if (quiz.description) {
-            <p class="mt-3 text-ink-soft">{{ quiz.description }}</p>
+            <p class="mt-3 whitespace-pre-line text-ink-soft">@for (part of quiz.description | linkify; track $index) {@if (part.href) {<a [href]="part.href" target="_blank" rel="noopener noreferrer" class="break-all font-semibold text-primary underline">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</p>
           }
           <div class="mt-5 space-y-2 border-t-2 border-muted pt-4 text-sm text-ink-muted">
             <p>{{ quiz.questionCount }} câu · {{ quiz.totalPoints | number:'1.0-2' }} điểm · {{ quiz.durationMinutes }} phút · 1 lượt</p>
@@ -251,6 +254,7 @@
     <fieldset class="space-y-5" [disabled]="creating || loadingEditor">
     <tf-field label="Tên bài test" [required]="true"><input tfInput [(ngModel)]="quizDraft.title" /></tf-field>
     <tf-field label="Mô tả"><textarea tfInput rows="3" [(ngModel)]="quizDraft.description"></textarea></tf-field>
+    <p class="-mt-3 text-xs text-ink-muted">Phần nghe: dán link Google Drive vào mô tả hoặc nội dung câu hỏi, học viên bấm vào để mở file nghe. Trên Drive, đặt quyền chia sẻ “Bất kỳ ai có đường liên kết”.</p>
     <tf-field label="Lớp học" [required]="true">
       <select tfInput [(ngModel)]="quizDraft.classId"><option [ngValue]="null">Chọn lớp</option>@for (item of classes; track item) {
       <option [ngValue]="item.id">{{ item.course }} — {{ item.name }}</option>
@@ -269,8 +273,91 @@
       <button type="button" tfButton variant="outline" size="sm" (click)="addQuestion('SingleChoice')">+ Trắc nghiệm · Một đáp án</button>
       <button type="button" tfButton variant="outline" size="sm" (click)="addQuestion('MultipleChoice')">+ Trắc nghiệm · Nhiều đáp án</button>
       <button type="button" tfButton variant="outline" size="sm" (click)="addQuestion('Essay')">+ Tự luận · Bài viết</button>
+      <button type="button" tfButton variant="secondary" size="sm" [attr.aria-expanded]="importOpen" (click)="importOpen ? closeImport() : importOpen = true">
+        <lucide-icon name="upload" class="h-4 w-4"></lucide-icon> Nhập từ file Word
+      </button>
     </div>
   </div>
+  @if (importOpen) {
+    <section class="space-y-4 rounded-lg border-2 border-primary/30 bg-primary-soft p-4" aria-label="Nhập câu hỏi từ Word">
+      <div>
+        <h4 class="font-extrabold">Nhập câu hỏi từ Word</h4>
+        <p class="mt-1 text-sm text-ink-muted">Câu hỏi được đưa vào trình soạn để bạn kiểm tra và sửa trước khi lưu. Chưa có gì được lưu cho tới khi bấm “Lưu bản nháp”.</p>
+      </div>
+      <label class="block">
+        <span class="text-sm font-semibold">Chọn file .docx</span>
+        <input type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          class="mt-1 block w-full text-sm" [disabled]="importReading" (change)="importWordFile($any($event.target))" data-testid="quiz-import-file" />
+      </label>
+      <div>
+        <span class="text-sm font-semibold">Hoặc dán nội dung từ Word</span>
+        <textarea tfInput rows="5" class="mt-1" [(ngModel)]="importText" placeholder="Câu 1: …&#10;A. …&#10;*B. …&#10;C. …"></textarea>
+        <button type="button" tfButton variant="outline" size="sm" class="mt-2" (click)="readPastedText()">Đọc nội dung đã dán</button>
+      </div>
+      <details class="rounded-md bg-white p-3 text-sm">
+        <summary class="cursor-pointer font-semibold">Cách soạn file Word để nhập đúng</summary>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-ink-soft">
+          <li>Mỗi câu bắt đầu bằng <strong>Câu 1:</strong>, <strong>Câu 2:</strong>… (hoặc 1., 2.…). Điểm ghi trong ngoặc, ví dụ <strong>(2 điểm)</strong>; không ghi thì mặc định 1 điểm.</li>
+          <li>Lựa chọn bắt đầu bằng <strong>A.</strong>, <strong>B.</strong>, <strong>C.</strong>… Đánh dấu đáp án đúng bằng một trong ba cách: dấu <strong>*</strong> trước chữ cái (<strong>*B.</strong>), <strong>in đậm</strong> cả dòng lựa chọn, hoặc dòng <strong>Đáp án: B</strong>.</li>
+          <li>Có từ 2 đáp án đúng trở lên thì thành câu nhiều đáp án. Muốn câu nhiều đáp án dù chỉ có một đáp án đúng, thêm <strong>[nhiều đáp án]</strong> vào dòng câu hỏi.</li>
+          <li>Câu không có lựa chọn là câu tự luận; có thể ghi <strong>[tự luận]</strong> cho rõ. Dòng <strong>Tiêu chí:</strong> là hướng dẫn chấm.</li>
+          <li>Dòng <strong>Giải thích:</strong> là lời giải hiện cho học viên sau khi chấm. Dòng <strong>Phần 1…</strong>, <strong>Phần 2…</strong> được gắn vào câu đầu tiên của phần đó.</li>
+          <li>Phần trước câu 1 dùng làm tên và mô tả đề nếu hai ô đó đang trống. Link Google Drive dán ở đâu cũng được và sẽ bấm được.</li>
+          <li>Ảnh trong file Word không được nhập; với phần nghe hãy dùng link Drive.</li>
+        </ul>
+        <a href="assets/templates/mau-de-kiem-tra.docx" download class="mt-3 inline-block font-semibold text-primary underline">Tải file Word mẫu</a>
+      </details>
+      @if (importReading) { <p role="status" class="text-sm text-ink-muted">Đang đọc file…</p> }
+      @if (importResult; as result) {
+        <div class="space-y-3 rounded-md bg-white p-3" data-testid="quiz-import-result">
+          <p class="font-semibold">Từ {{ importSource }}: {{ importSummary(result) }}</p>
+          @if (result.issues.length) {
+            <ul class="space-y-1 text-sm">
+              @for (issue of result.issues; track $index) {
+                <li [class.text-danger]="issue.level === 'error'" [class.text-ink-muted]="issue.level === 'warning'">
+                  {{ issue.level === 'error' ? 'Lỗi' : 'Lưu ý' }}@if (issue.question) {<span> · Câu {{ issue.question }}</span>}: {{ issue.message }}
+                </li>
+              }
+            </ul>
+          }
+          @if (result.questions.length) {
+            <ol class="max-h-72 space-y-2 overflow-y-auto text-sm">
+              @for (q of result.questions; track $index; let i = $index) {
+                <li class="rounded border border-line p-2">
+                  <p class="font-semibold">Câu {{ i + 1 }} · {{ questionTypeLabel(q.type) }} · {{ q.points }} điểm</p>
+                  <p class="mt-1 line-clamp-3 whitespace-pre-line text-ink-soft">{{ q.content }}</p>
+                  @if (q.type !== 'Essay') {
+                    <p class="mt-1 text-ink-muted">{{ q.options.length }} lựa chọn · Đáp án đúng: <strong>{{ correctLetters(q) }}</strong></p>
+                  }
+                </li>
+              }
+            </ol>
+            @if (importErrors) {
+              <p class="text-sm text-danger">Còn {{ importErrors }} lỗi. Bạn vẫn có thể đưa vào đề rồi sửa trực tiếp, hoặc sửa file Word và chọn lại.</p>
+            }
+            <div class="flex flex-wrap gap-2">
+              <button type="button" tfButton variant="primary" size="sm" (click)="applyImport(false)">Thêm {{ result.questions.length }} câu vào đề</button>
+              @if (quizDraft.questions.length) {
+                <button type="button" tfButton variant="outline" size="sm" (click)="applyImport(true)">Thay toàn bộ câu đang có</button>
+              }
+              <button type="button" tfButton variant="ghost" size="sm" (click)="closeImport()">Hủy</button>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+  @if (importNotes.length) {
+    <section class="rounded-lg bg-accent-soft p-4 text-sm" aria-label="Cần kiểm tra sau khi nhập">
+      <div class="flex items-start justify-between gap-3">
+        <p class="font-semibold">Cần kiểm tra lại sau khi nhập từ Word:</p>
+        <button type="button" tfButton variant="ghost" size="icon" aria-label="Đóng ghi chú nhập" (click)="importNotes = []"><lucide-icon name="x" class="h-4 w-4"></lucide-icon></button>
+      </div>
+      <ul class="mt-2 list-disc space-y-1 pl-5">
+        @for (note of importNotes; track $index) { <li>{{ note }}</li> }
+      </ul>
+    </section>
+  }
   @for (question of quizDraft.questions; track question; let qi = $index) {
     <article class="space-y-3 rounded-lg border-2 border-line p-4">
       <div class="flex items-center justify-between gap-3">
@@ -308,11 +395,11 @@
   <button type="button" tfButton variant="outline" [disabled]="creating || loadingEditor" (click)="previewing = !previewing">{{ previewing ? 'Đóng xem trước' : 'Xem trước đề cho học viên' }}</button>
   @if (previewing) {
     <section class="space-y-4 rounded-lg bg-muted p-4" aria-label="Xem trước đề cho học viên">
-      <h2 class="text-xl font-bold">{{ quizDraft.title }}</h2><p>{{ quizDraft.description }}</p>
+      <h2 class="text-xl font-bold">{{ quizDraft.title }}</h2><p class="whitespace-pre-line">@for (part of quizDraft.description | linkify; track $index) {@if (part.href) {<a [href]="part.href" target="_blank" rel="noopener noreferrer" class="break-all font-semibold text-primary underline">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</p>
       <p>{{ quizDraft.durationMinutes }} phút · {{ totalPoints }} điểm</p>
       @for (q of quizDraft.questions; track q; let i = $index) {
         <article class="rounded-md bg-white p-4">
-          <p class="font-bold">Câu {{ i + 1 }} · {{ q.points }} điểm</p><p class="mt-2 whitespace-pre-line">{{ q.content }}</p>
+          <p class="font-bold">Câu {{ i + 1 }} · {{ q.points }} điểm</p><p class="mt-2 whitespace-pre-line">@for (part of q.content | linkify; track $index) {@if (part.href) {<a [href]="part.href" target="_blank" rel="noopener noreferrer" class="break-all font-semibold text-primary underline">{{ part.text }}</a>} @else {<span>{{ part.text }}</span>}}</p>
           @if (q.type === 'Essay') { <textarea tfInput rows="6" [(ngModel)]="previewAnswers[i]" placeholder="Viết bài tại đây..."></textarea> }
           @else { @for (o of q.options; track o) { <label class="mt-3 flex gap-3"><input [type]="q.type === 'SingleChoice' ? 'radio' : 'checkbox'" [name]="'preview-' + i" />{{ o.text }}</label> } }
         </article>
